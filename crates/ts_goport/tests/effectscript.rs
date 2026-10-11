@@ -174,3 +174,21 @@ fn try_catch_and_finally_compose_effects() {
     let out = node(&dir, "run.mjs");
     assert!(out.contains("ok - try, catch and finally"), "{out}");
 }
+
+#[test]
+fn library_app_serves_http_requests() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/library");
+    assert!(
+        dir.join("node_modules/effect/package.json").exists(),
+        "run `npm ci` in examples/library"
+    );
+    let output = tsgo(&dir, &[]);
+    assert!(output.status.success(), "tsgo failed:\n{}", stdout(&output));
+    let out = node(&dir, "dist/smoke.js");
+    assert_eq!(
+        12,
+        out.lines().filter(|line| line.starts_with("ok - ")).count(),
+        "{out}"
+    );
+    assert!(!out.contains("FAILED"), "{out}");
+}

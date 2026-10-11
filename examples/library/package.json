@@ -1,0 +1,16 @@
+{
+  "name": "effectscript-library",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "../../target/release/efc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "test": "node dist/smoke.js"
+  },
+  "dependencies": {
+    "effect": "3.22.2"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1"
+  }
+}

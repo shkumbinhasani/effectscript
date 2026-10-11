@@ -37,6 +37,7 @@ pub struct EfState {
     uses_yield_wrap: bool,
     anchor: i32,
     signature_aliases: Vec<Node>,
+    body_aliases: Vec<Node>,
 }
 
 impl EfState {
@@ -697,7 +698,11 @@ impl<'a> Parser<'a> {
 
     fn ef_identifier(&mut self, text: &str) -> Node {
         let node = self.factory.new_identifier(text);
-        self.ef_finish_synthesized(node)
+        let node = self.ef_finish_synthesized(node);
+        if text == EFFECT_ALIAS {
+            self.ef.body_aliases.push(node);
+        }
+        node
     }
 
     fn ef_effect_member(&mut self, member: &str) -> Node {
@@ -991,6 +996,20 @@ impl<'a> Parser<'a> {
             return imports;
         }
         let mut prelude = prelude_names_to_import(statements);
+        let mut needs_alias_import = self.ef.uses_effect;
+        if self.ef.uses_effect
+            && let Some(import_effect) = effect_name_available(statements)
+            && !declares_effect_below_top_level(statements)
+        {
+            for alias in std::mem::take(&mut self.ef.body_aliases) {
+                rename_identifier(alias, "Effect");
+            }
+            self.ef.signature_aliases.clear();
+            if import_effect && !prelude.contains(&"Effect") {
+                prelude.insert(0, "Effect");
+            }
+            needs_alias_import = false;
+        }
         if !self.ef.signature_aliases.is_empty()
             && let Some(import_effect) = effect_name_available(statements)
         {
@@ -1005,7 +1024,7 @@ impl<'a> Parser<'a> {
             let pairs: Vec<(&str, &str)> = prelude.iter().map(|name| (*name, *name)).collect();
             imports.push(self.ef_import(false, &pairs, EFFECT_MODULE));
         }
-        if self.ef.uses_effect {
+        if needs_alias_import {
             imports.push(self.ef_import(false, &[("Effect", EFFECT_ALIAS)], EFFECT_MODULE));
         }
         if self.ef.uses_yield_wrap {
@@ -1203,4 +1222,27 @@ fn rename_identifier(identifier: Node, text: &str) {
         d.text = text.to_string();
     }
     replace_node_data(identifier, data);
+}
+
+fn declares_effect_below_top_level(statements: &[Node]) -> bool {
+    fn visit(node: Node) -> bool {
+        let declares = matches!(
+            node.kind(),
+            SyntaxKind::VariableDeclaration
+                | SyntaxKind::Parameter
+                | SyntaxKind::BindingElement
+                | SyntaxKind::FunctionDeclaration
+                | SyntaxKind::FunctionExpression
+                | SyntaxKind::ClassDeclaration
+                | SyntaxKind::ClassExpression
+                | SyntaxKind::EnumDeclaration
+                | SyntaxKind::ModuleDeclaration
+                | SyntaxKind::TypeParameter
+        ) && node.pos() >= 0
+            && node.name().is_some()
+            && node.name().kind() == SyntaxKind::Identifier
+            && node.name().text() == "Effect";
+        declares || node.for_each_child(visit)
+    }
+    statements.iter().any(|&statement| visit(statement))
 }

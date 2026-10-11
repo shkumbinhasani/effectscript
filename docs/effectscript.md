@@ -309,23 +309,17 @@ imports it from `node_modules` and the checker reads its types from there.
 
 ## Output
 
-The compiler adds this import to each `.ef` file that declares an effect
-function. The bodies call `Effect.gen` and `Effect.fail` through it, so a
-local variable named `Effect` cannot break them:
-
-```ts
-import { Effect as __es_Effect } from "effect"
-```
-
-`getUser` above becomes:
+The output reads like hand-written Effect code. `getUser` above becomes:
 
 ```js
+import { Effect } from "effect";
+
 export function getUser(id) {
-    return __es_Effect.gen(function* () {
+    return Effect.gen(function* () {
         const db = (yield* Database);
         const user = (yield* db.findUser(id));
         if (!user)
-            return yield* __es_Effect.fail(new UserNotFound({ id }));
+            return yield* Effect.fail(new UserNotFound({ id }));
         return user;
     });
 }
@@ -338,15 +332,14 @@ import { Effect } from "effect";
 export declare function getUser(id: string): Effect.Effect<User, UserNotFound | DbError, Database>;
 ```
 
-Signatures of top-level effect functions name `Effect` directly when
-`Effect` in the file is the one from `effect` (the automatic import or your
-own `import { Effect } from "effect"`). If the file declares its own
-`Effect`, they use `__es_Effect.Effect<...>` instead. The `__es_` prefix
-keeps the added names apart from user names. The
-declaration files are plain TypeScript: `examples/effectscript/consumer` is
-checked by the `tsc` 5.9 package with `skipLibCheck` off. ES module and
-CommonJS output both work. A `.ef` file without effect functions emits
-byte for byte what the same `.ts` file emits.
+The compiler imports `Effect` itself when the file does not. If the file
+declares something else named `Effect` anywhere, even a parameter in a
+callback, the generated code uses a private
+`import { Effect as __es_Effect } from "effect"` instead, so your name cannot
+break it. The declaration files are plain TypeScript:
+`examples/effectscript/consumer` is checked by the `tsc` 5.9 package with
+`skipLibCheck` off. ES module and CommonJS output both work. A `.ef` file
+without effect functions emits byte for byte what the same `.ts` file emits.
 
 ## Files and modules
 
@@ -454,7 +447,8 @@ real `effect` declarations: there is no second type system and no `any`.
 
 - **Parse-time lowering.** The checker and emitter see an ordinary
   TypeScript tree, which kept the change small. The cost shows only when a
-  file declares its own `Effect`: then types read `__es_Effect.Effect<...>`.
+  file declares its own `Effect`: then generated code and inferred types
+  use `__es_Effect`.
 - **`async` is required but the function is not a JavaScript async
   function.** The `async` keyword marks where `await` may appear; `effect`
   decides what `await` means. Plain `async function` in a `.ef` file still

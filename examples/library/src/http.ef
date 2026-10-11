@@ -1,0 +1,56 @@
+import { addBook, auditTrail, borrowBook, listBooks, returnBook } from "./library.js"
+
+export interface Request {
+  readonly method: string
+  readonly path: string
+  readonly body: unknown
+}
+
+export interface Response {
+  readonly status: number
+  readonly body: unknown
+}
+
+export class RouteNotFound extends Data.TaggedError("RouteNotFound")<{
+  readonly method: string
+  readonly path: string
+}> {}
+
+function json(status: number, body: unknown): Response {
+  return { status, body }
+}
+
+effect async function route({ method, path, body }: Request) {
+  const [resource, id, action] = path.split("/").filter(Boolean)
+
+  if (resource === "books" && id === undefined) {
+    if (method === "GET") return json(200, await listBooks())
+    if (method === "POST") return json(201, await addBook(body))
+  }
+  if (resource === "books" && id !== undefined && method === "POST") {
+    if (action === "borrow") return json(200, await borrowBook(id, body))
+    if (action === "return") return json(200, await returnBook(id))
+  }
+  if (resource === "audit" && method === "GET") return json(200, await auditTrail())
+
+  throw new RouteNotFound({ method, path })
+}
+
+export effect async function handle(request: Request) {
+  try {
+    return await route(request)
+  } catch (error) {
+    switch (error._tag) {
+      case "InvalidInput":
+        return json(400, { error: error.message })
+      case "BookNotFound":
+        return json(404, { error: `no book with id ${error.id}` })
+      case "RouteNotFound":
+        return json(404, { error: `no route for ${error.method} ${error.path}` })
+      case "AlreadyBorrowed":
+        return json(409, { error: `${error.id} is already borrowed by ${error.member}` })
+      case "NotBorrowed":
+        return json(409, { error: `${error.id} is not borrowed` })
+    }
+  }
+}
