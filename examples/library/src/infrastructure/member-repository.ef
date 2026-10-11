@@ -1,0 +1,18 @@
+import { MemberRepository } from "../application/ports.js"
+import type { Member } from "../domain/member.js"
+import { Database, type Row } from "./database.js"
+
+function toMember(row: Row): Member {
+  return { id: String(row.id), name: String(row.name), email: String(row.email) }
+}
+
+export effect async function makeMemberRepository() {
+  const db = use Database
+  return MemberRepository.of({
+    findById: (id) => Effect.map(db.get("SELECT * FROM members WHERE id = ?", id), Option.map(toMember)),
+    findByEmail: (email) =>
+      Effect.map(db.get("SELECT * FROM members WHERE email = ?", email), Option.map(toMember)),
+    insert: (member) =>
+      db.run("INSERT INTO members (id, name, email) VALUES (?, ?, ?)", member.id, member.name, member.email)
+  })
+}

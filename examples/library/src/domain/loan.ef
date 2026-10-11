@@ -1,0 +1,13 @@
+export interface Loan {
+  readonly id: string
+  readonly bookId: string
+  readonly memberId: string
+  readonly borrowedAt: number
+  readonly dueAt: number
+  readonly returnedAt?: number
+  readonly fee?: number
+}
+
+export function isActive(loan: Loan): boolean {
+  return loan.returnedAt === undefined
+}

@@ -1,0 +1,16 @@
+import { LogLevel, Logger } from "effect"
+import { RandomIds } from "./infrastructure/ids.js"
+import { Persistence } from "./infrastructure/layers.js"
+
+export interface AppOptions {
+  readonly databasePath: string
+  readonly logLevel?: LogLevel.LogLevel
+}
+
+export function AppLayer(options: AppOptions) {
+  return Layer.mergeAll(
+    Persistence(options.databasePath),
+    RandomIds,
+    Logger.minimumLogLevel(options.logLevel ?? LogLevel.Info)
+  )
+}

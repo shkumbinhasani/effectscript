@@ -118,6 +118,20 @@ impl Checker {
     }
 
     pub fn get_effect_channels(&mut self, t: TypeId) -> Option<EffectChannels> {
+        if self.ty(t).flags.intersects(TypeFlags::UNION) {
+            let members = self.ty(t).types().to_vec();
+            let mut errors = Vec::with_capacity(members.len());
+            let mut requirements = Vec::with_capacity(members.len());
+            for member in members {
+                let channels = self.get_effect_channels(member)?;
+                errors.push(channels.errors);
+                requirements.push(channels.requirements);
+            }
+            return Some(EffectChannels {
+                errors: self.get_union_type(&errors),
+                requirements: self.get_union_type(&requirements),
+            });
+        }
         let apparent = self.get_apparent_type(t);
         for property in self.get_properties_of_type(apparent).iter().copied() {
             let property_type = self.get_type_of_symbol(property);

@@ -1,0 +1,19 @@
+import { strict as assert } from "node:assert"
+import { test } from "node:test"
+import { FeePerDayInCents, LoanPeriod, dueDate, lateFee } from "../src/domain/policies.js"
+
+const day = Duration.toMillis(Duration.days(1))
+
+test("a loan is due after the loan period", () => {
+  assert.equal(dueDate(1_000), 1_000 + Duration.toMillis(LoanPeriod))
+})
+
+test("returning on time or early costs nothing", () => {
+  assert.equal(lateFee(10 * day, 10 * day), 0)
+  assert.equal(lateFee(10 * day, 3 * day), 0)
+})
+
+test("each started day late costs the daily fee", () => {
+  assert.equal(lateFee(10 * day, 10 * day + 1), FeePerDayInCents)
+  assert.equal(lateFee(10 * day, 13 * day), 3 * FeePerDayInCents)
+})

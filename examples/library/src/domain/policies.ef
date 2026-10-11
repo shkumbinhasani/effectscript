@@ -1,0 +1,14 @@
+export const LoanPeriod = Duration.days(14)
+
+export const MaxActiveLoans = 3
+
+export const FeePerDayInCents = 25
+
+export function dueDate(borrowedAt: number): number {
+  return borrowedAt + Duration.toMillis(LoanPeriod)
+}
+
+export function lateFee(dueAt: number, returnedAt: number): number {
+  const daysLate = Math.ceil((returnedAt - dueAt) / Duration.toMillis(Duration.days(1)))
+  return Math.max(0, daysLate) * FeePerDayInCents
+}

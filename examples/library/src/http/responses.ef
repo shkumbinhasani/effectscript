@@ -1,0 +1,56 @@
+import type { DomainError } from "../domain/errors.js"
+
+export interface Request {
+  readonly method: string
+  readonly path: string
+  readonly body: unknown
+}
+
+export interface Response {
+  readonly status: number
+  readonly body: unknown
+}
+
+export class InvalidRequest extends Data.TaggedError("InvalidRequest")<{ readonly message: string }> {}
+
+export class RouteNotFound extends Data.TaggedError("RouteNotFound")<{
+  readonly method: string
+  readonly path: string
+}> {}
+
+export type HttpError = InvalidRequest | RouteNotFound
+
+export function ok(body: unknown): Response {
+  return { status: 200, body }
+}
+
+export function created(body: unknown): Response {
+  return { status: 201, body }
+}
+
+function problem(status: number, code: string, message: string): Response {
+  return { status, body: { error: { code, message } } }
+}
+
+export function errorResponse(error: DomainError | HttpError): Response {
+  switch (error._tag) {
+    case "InvalidRequest":
+      return problem(400, "invalid_request", error.message)
+    case "RouteNotFound":
+      return problem(404, "route_not_found", `no route for ${error.method} ${error.path}`)
+    case "BookNotFound":
+      return problem(404, "book_not_found", `no book with id ${error.bookId}`)
+    case "MemberNotFound":
+      return problem(404, "member_not_found", `no member with id ${error.memberId}`)
+    case "EmailTaken":
+      return problem(409, "email_taken", `${error.email} is already registered`)
+    case "BookUnavailable":
+      return problem(409, "book_unavailable", `${error.bookId} is on loan until ${new Date(error.dueAt).toISOString()}`)
+    case "LoanLimitReached":
+      return problem(409, "loan_limit_reached", `member ${error.memberId} already has ${error.limit} books`)
+    case "NotOnLoan":
+      return problem(409, "not_on_loan", `${error.bookId} is not on loan`)
+  }
+}
+
+export const internalError: Response = problem(500, "internal_error", "something went wrong")

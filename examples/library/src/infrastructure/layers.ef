@@ -1,0 +1,19 @@
+import { BookRepository, LoanRepository, MemberRepository } from "../application/ports.js"
+import { makeBookRepository } from "./book-repository.js"
+import { Database, makeDatabase } from "./database.js"
+import { makeLoanRepository } from "./loan-repository.js"
+import { makeMemberRepository } from "./member-repository.js"
+
+export function SqliteDatabase(path: string) {
+  return Layer.scoped(Database, makeDatabase(path))
+}
+
+export const Repositories = Layer.mergeAll(
+  Layer.effect(BookRepository, makeBookRepository()),
+  Layer.effect(MemberRepository, makeMemberRepository()),
+  Layer.effect(LoanRepository, makeLoanRepository())
+)
+
+export function Persistence(path: string) {
+  return Layer.provide(Repositories, SqliteDatabase(path))
+}

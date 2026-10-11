@@ -1,0 +1,72 @@
+import { ParseResult } from "effect"
+import { addBook, getBook, listBooks } from "../application/catalog.js"
+import { borrowBook, memberLoans, returnBook } from "../application/lending.js"
+import { getMember, registerMember } from "../application/members.js"
+import { presentLoan } from "./presenters.js"
+import { InvalidRequest, created, ok } from "./responses.js"
+import { AddBookBody, BorrowBody, RegisterMemberBody } from "./schemas.js"
+
+export interface RouteRequest {
+  readonly params: Readonly<Record<string, string>>
+  readonly body: unknown
+}
+
+effect async function body<A, I>(schema: Schema.Schema<A, I>, input: unknown): A
+  throws InvalidRequest
+{
+  try {
+    return await Schema.decodeUnknown(schema, { onExcessProperty: "error" })(input)
+  } catch (error) {
+    throw new InvalidRequest({ message: ParseResult.TreeFormatter.formatErrorSync(error) })
+  }
+}
+
+effect async function health() {
+  return ok({ status: "ok" })
+}
+
+effect async function getBooks() {
+  return ok(await listBooks())
+}
+
+effect async function postBook(request: RouteRequest) {
+  return created(await addBook(await body(AddBookBody, request.body)))
+}
+
+effect async function getBookById(request: RouteRequest) {
+  return ok(await getBook(request.params.id))
+}
+
+effect async function postMember(request: RouteRequest) {
+  return created(await registerMember(await body(RegisterMemberBody, request.body)))
+}
+
+effect async function getMemberById(request: RouteRequest) {
+  return ok(await getMember(request.params.id))
+}
+
+effect async function getMemberLoans(request: RouteRequest) {
+  const loans = await memberLoans(request.params.id)
+  return ok(loans.map(presentLoan))
+}
+
+effect async function postLoan(request: RouteRequest) {
+  const { memberId } = await body(BorrowBody, request.body)
+  return created(presentLoan(await borrowBook({ bookId: request.params.id, memberId })))
+}
+
+effect async function postReturn(request: RouteRequest) {
+  return ok(presentLoan(await returnBook(request.params.id)))
+}
+
+export const routes = [
+  { method: "GET", pattern: "/health", handler: health },
+  { method: "GET", pattern: "/books", handler: getBooks },
+  { method: "POST", pattern: "/books", handler: postBook },
+  { method: "GET", pattern: "/books/:id", handler: getBookById },
+  { method: "POST", pattern: "/books/:id/loans", handler: postLoan },
+  { method: "POST", pattern: "/books/:id/return", handler: postReturn },
+  { method: "POST", pattern: "/members", handler: postMember },
+  { method: "GET", pattern: "/members/:id", handler: getMemberById },
+  { method: "GET", pattern: "/members/:id/loans", handler: getMemberLoans }
+] as const

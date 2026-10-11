@@ -1,0 +1,75 @@
+import { strict as assert } from "node:assert"
+import { test } from "node:test"
+import { TestClock } from "effect"
+import { addBook } from "../src/application/catalog.js"
+import { borrowBook, memberLoans, returnBook } from "../src/application/lending.js"
+import { registerMember } from "../src/application/members.js"
+import { FeePerDayInCents, MaxActiveLoans } from "../src/domain/policies.js"
+import { run } from "./support.js"
+
+effect async function setup() {
+  const book = await addBook({ title: "Types and Programming Languages", author: "Benjamin C. Pierce" })
+  const member = await registerMember({ name: "Ada", email: "ada@example.com" })
+  return { book, member }
+}
+
+effect async function lateReturn() {
+  const { book, member } = await setup()
+  await borrowBook({ bookId: book.id, memberId: member.id })
+  await TestClock.adjust(Duration.days(17))
+  return await returnBook(book.id)
+}
+
+effect async function borrowTwice() {
+  const { book, member } = await setup()
+  const other = await registerMember({ name: "Linus", email: "linus@example.com" })
+  await borrowBook({ bookId: book.id, memberId: member.id })
+  try {
+    await borrowBook({ bookId: book.id, memberId: other.id })
+    return "borrowed"
+  } catch (error) {
+    return error._tag
+  }
+}
+
+effect async function borrowTooMany() {
+  const { member } = await setup()
+  for (let n = 0; n < MaxActiveLoans; n++) {
+    const book = await addBook({ title: `Book ${n}`, author: "Anon" })
+    await borrowBook({ bookId: book.id, memberId: member.id })
+  }
+  const extra = await addBook({ title: "One too many", author: "Anon" })
+  return await Effect.either(borrowBook({ bookId: extra.id, memberId: member.id }))
+}
+
+effect async function history() {
+  const { book, member } = await setup()
+  await borrowBook({ bookId: book.id, memberId: member.id })
+  await returnBook(book.id)
+  await borrowBook({ bookId: book.id, memberId: member.id })
+  return await memberLoans(member.id)
+}
+
+test("a late return charges the fee for each day late", async () => {
+  const loan = await run(lateReturn())
+  assert.equal(loan.fee, 3 * FeePerDayInCents)
+})
+
+test("a book on loan cannot be borrowed again", async () => {
+  assert.equal(await run(borrowTwice()), "BookUnavailable")
+})
+
+test("a member cannot borrow more than the limit", async () => {
+  const result = await run(borrowTooMany())
+  assert.ok(result._tag === "Left" && result.left._tag === "LoanLimitReached")
+})
+
+test("the loan history keeps returned and active loans", async () => {
+  const loans = await run(history())
+  assert.equal(loans.length, 2)
+  assert.ok(loans[0].returnedAt !== undefined && loans[1].returnedAt === undefined)
+})
+
+test("calling a use case runs nothing until the effect runs", () => {
+  assert.ok(Effect.isEffect(returnBook("missing")))
+})

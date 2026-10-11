@@ -1,0 +1,34 @@
+import type { Book } from "../domain/book.js"
+import type { Loan } from "../domain/loan.js"
+import type { Member } from "../domain/member.js"
+
+export class BookRepository extends Context.Tag("BookRepository")<
+  BookRepository,
+  {
+    readonly list: Effect.Effect<ReadonlyArray<Book>>
+    readonly findById: (id: string) => Effect.Effect<Option.Option<Book>>
+    readonly insert: (book: Book) => Effect.Effect<void>
+  }
+>() {}
+
+export class MemberRepository extends Context.Tag("MemberRepository")<
+  MemberRepository,
+  {
+    readonly findById: (id: string) => Effect.Effect<Option.Option<Member>>
+    readonly findByEmail: (email: string) => Effect.Effect<Option.Option<Member>>
+    readonly insert: (member: Member) => Effect.Effect<void>
+  }
+>() {}
+
+export class LoanRepository extends Context.Tag("LoanRepository")<
+  LoanRepository,
+  {
+    readonly findActiveByBook: (bookId: string) => Effect.Effect<Option.Option<Loan>>
+    readonly listByMember: (memberId: string) => Effect.Effect<ReadonlyArray<Loan>>
+    readonly countActiveByMember: (memberId: string) => Effect.Effect<number>
+    readonly insert: (loan: Loan) => Effect.Effect<void>
+    readonly close: (loanId: string, returnedAt: number, fee: number) => Effect.Effect<void>
+  }
+>() {}
+
+export class Ids extends Context.Tag("Ids")<Ids, { readonly next: Effect.Effect<string> }>() {}

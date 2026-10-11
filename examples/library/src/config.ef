@@ -1,0 +1,7 @@
+import { Config } from "effect"
+
+export const AppConfig = Config.all({
+  port: Config.withDefault(Config.integer("PORT"), 3000),
+  databasePath: Config.withDefault(Config.string("DATABASE_PATH"), "library.db"),
+  logLevel: Config.withDefault(Config.logLevel("LOG_LEVEL"), undefined)
+})

@@ -176,19 +176,32 @@ fn try_catch_and_finally_compose_effects() {
 }
 
 #[test]
-fn library_app_serves_http_requests() {
+fn library_app_passes_its_tests() {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples/library");
     assert!(
         dir.join("node_modules/effect/package.json").exists(),
         "run `npm ci` in examples/library"
     );
+    let _ = fs::remove_dir_all(dir.join("dist"));
     let output = tsgo(&dir, &[]);
     assert!(output.status.success(), "tsgo failed:\n{}", stdout(&output));
-    let out = node(&dir, "dist/smoke.js");
-    assert_eq!(
-        12,
-        out.lines().filter(|line| line.starts_with("ok - ")).count(),
+    let tests: Vec<String> = fs::read_dir(dir.join("dist/test"))
+        .expect("dist/test")
+        .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
+        .filter(|name| name.ends_with(".test.js"))
+        .map(|name| format!("dist/test/{name}"))
+        .collect();
+    assert_eq!(3, tests.len(), "{tests:?}");
+    let run = Command::new("node")
+        .current_dir(&dir)
+        .arg("--test")
+        .args(&tests)
+        .output()
+        .expect("node runs");
+    let out = stdout(&run);
+    assert!(run.status.success(), "{out}");
+    assert!(
+        out.contains("ℹ pass 10") && out.contains("ℹ fail 0"),
         "{out}"
     );
-    assert!(!out.contains("FAILED"), "{out}");
 }

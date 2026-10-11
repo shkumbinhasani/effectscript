@@ -1,0 +1,19 @@
+const Email = Schema.String.pipe(
+  Schema.trimmed(),
+  Schema.pattern(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, { message: () => "must be an email address" })
+)
+
+export const AddBookBody = Schema.Struct({
+  title: Schema.NonEmptyTrimmedString,
+  author: Schema.NonEmptyTrimmedString,
+  isbn: Schema.optional(Schema.NonEmptyTrimmedString)
+})
+
+export const RegisterMemberBody = Schema.Struct({
+  name: Schema.NonEmptyTrimmedString,
+  email: Email
+})
+
+export const BorrowBody = Schema.Struct({
+  memberId: Schema.NonEmptyTrimmedString
+})

@@ -1,0 +1,14 @@
+import { LogLevel, Logger, TestContext } from "effect"
+import { SequentialIds } from "../src/infrastructure/ids.js"
+import { Persistence } from "../src/infrastructure/layers.js"
+
+export const TestLayer = Layer.mergeAll(
+  Persistence(":memory:"),
+  SequentialIds("id-"),
+  Logger.minimumLogLevel(LogLevel.None),
+  TestContext.TestContext
+)
+
+export function run<A, E>(effect: Effect.Effect<A, E, Layer.Layer.Success<typeof TestLayer>>): Promise<A> {
+  return Effect.runPromise(Effect.provide(effect, TestLayer))
+}

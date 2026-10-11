@@ -1,0 +1,24 @@
+import { BookRepository } from "../application/ports.js"
+import type { Book } from "../domain/book.js"
+import { Database, type Row } from "./database.js"
+
+function toBook(row: Row): Book {
+  const book: Book = { id: String(row.id), title: String(row.title), author: String(row.author) }
+  return row.isbn === null ? book : { ...book, isbn: String(row.isbn) }
+}
+
+export effect async function makeBookRepository() {
+  const db = use Database
+  return BookRepository.of({
+    list: Effect.map(db.all("SELECT * FROM books ORDER BY title"), (rows) => rows.map(toBook)),
+    findById: (id) => Effect.map(db.get("SELECT * FROM books WHERE id = ?", id), Option.map(toBook)),
+    insert: (book) =>
+      db.run(
+        "INSERT INTO books (id, title, author, isbn) VALUES (?, ?, ?, ?)",
+        book.id,
+        book.title,
+        book.author,
+        book.isbn ?? null
+      )
+  })
+}

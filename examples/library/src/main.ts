@@ -1,12 +1,19 @@
-import { startServer } from "./server.js"
-import { makeAppLayer, seedBooks } from "./services.js"
+import { Effect, ManagedRuntime } from "effect"
+import { AppLayer } from "./app.js"
+import { AppConfig } from "./config.js"
+import { serve } from "./http/server.js"
 
-const port = Number(process.env.PORT ?? 3000)
-const { url } = await startServer(makeAppLayer({ seed: seedBooks, echo: true }), port)
+const config = await Effect.runPromise(AppConfig)
+const runtime = ManagedRuntime.make(AppLayer(config))
+const server = await serve(runtime, config.port)
 
-console.log(`library API on ${url}`)
-console.log(`  GET  ${url}/books`)
-console.log(`  POST ${url}/books              {"title": "...", "author": "..."}`)
-console.log(`  POST ${url}/books/b1/borrow    {"member": "ada"}`)
-console.log(`  POST ${url}/books/b1/return`)
-console.log(`  GET  ${url}/audit`)
+console.log(`library API on ${server.url} (database ${config.databasePath})`)
+
+async function shutdown() {
+  await server.close()
+  await runtime.dispose()
+  process.exit(0)
+}
+
+process.once("SIGINT", shutdown)
+process.once("SIGTERM", shutdown)

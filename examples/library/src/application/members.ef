@@ -1,0 +1,29 @@
+import { EmailTaken, MemberNotFound } from "../domain/errors.js"
+import type { Member, NewMember } from "../domain/member.js"
+import { Ids, MemberRepository } from "./ports.js"
+
+export effect async function registerMember(input: NewMember): Member
+  requires MemberRepository | Ids
+  throws EmailTaken
+{
+  const members = use MemberRepository
+  const ids = use Ids
+
+  const email = input.email.toLowerCase()
+  if (Option.isSome(await members.findByEmail(email))) throw new EmailTaken({ email })
+
+  const member: Member = { id: await ids.next, name: input.name, email }
+  await members.insert(member)
+  await Effect.annotateLogs(Effect.logInfo("member registered"), { memberId: member.id })
+  return member
+}
+
+export effect async function getMember(memberId: string): Member
+  requires MemberRepository
+  throws MemberNotFound
+{
+  const members = use MemberRepository
+  const member = await members.findById(memberId)
+  if (Option.isNone(member)) throw new MemberNotFound({ memberId })
+  return member.value
+}

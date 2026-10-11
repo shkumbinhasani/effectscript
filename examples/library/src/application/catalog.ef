@@ -1,0 +1,32 @@
+import type { Book, NewBook } from "../domain/book.js"
+import { BookNotFound } from "../domain/errors.js"
+import { BookRepository, Ids } from "./ports.js"
+
+export effect async function addBook(input: NewBook): Book
+  requires BookRepository | Ids
+{
+  const books = use BookRepository
+  const ids = use Ids
+
+  const book: Book = { id: await ids.next, ...input }
+  await books.insert(book)
+  await Effect.annotateLogs(Effect.logInfo("book added"), { bookId: book.id })
+  return book
+}
+
+export effect async function listBooks(): ReadonlyArray<Book>
+  requires BookRepository
+{
+  const books = use BookRepository
+  return await books.list
+}
+
+export effect async function getBook(bookId: string): Book
+  requires BookRepository
+  throws BookNotFound
+{
+  const books = use BookRepository
+  const book = await books.findById(bookId)
+  if (Option.isNone(book)) throw new BookNotFound({ bookId })
+  return book.value
+}

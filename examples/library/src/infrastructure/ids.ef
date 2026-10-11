@@ -1,0 +1,14 @@
+import { randomUUID } from "node:crypto"
+import { Ref } from "effect"
+import { Ids } from "../application/ports.js"
+
+export const RandomIds = Layer.succeed(Ids, Ids.of({ next: Effect.sync(() => randomUUID()) }))
+
+effect async function makeSequentialIds(prefix: string) {
+  const counter = await Ref.make(0)
+  return Ids.of({ next: Effect.map(Ref.updateAndGet(counter, (n) => n + 1), (n) => `${prefix}${n}`) })
+}
+
+export function SequentialIds(prefix: string) {
+  return Layer.effect(Ids, makeSequentialIds(prefix))
+}

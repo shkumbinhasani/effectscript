@@ -1,0 +1,25 @@
+export class BookNotFound extends Data.TaggedError("BookNotFound")<{ readonly bookId: string }> {}
+
+export class MemberNotFound extends Data.TaggedError("MemberNotFound")<{ readonly memberId: string }> {}
+
+export class EmailTaken extends Data.TaggedError("EmailTaken")<{ readonly email: string }> {}
+
+export class BookUnavailable extends Data.TaggedError("BookUnavailable")<{
+  readonly bookId: string
+  readonly dueAt: number
+}> {}
+
+export class LoanLimitReached extends Data.TaggedError("LoanLimitReached")<{
+  readonly memberId: string
+  readonly limit: number
+}> {}
+
+export class NotOnLoan extends Data.TaggedError("NotOnLoan")<{ readonly bookId: string }> {}
+
+export type DomainError =
+  | BookNotFound
+  | MemberNotFound
+  | EmailTaken
+  | BookUnavailable
+  | LoanLimitReached
+  | NotOnLoan

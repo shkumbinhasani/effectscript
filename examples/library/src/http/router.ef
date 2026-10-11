@@ -1,0 +1,49 @@
+import { randomUUID } from "node:crypto"
+import { routes } from "./routes.js"
+import { RouteNotFound, errorResponse, internalError, type Request } from "./responses.js"
+
+function match(pattern: string, path: string): Record<string, string> | undefined {
+  const expected = pattern.split("/").filter(Boolean)
+  const actual = path.split("/").filter(Boolean)
+  if (expected.length !== actual.length) return undefined
+  const params: Record<string, string> = {}
+  for (const [index, part] of expected.entries()) {
+    if (part.startsWith(":")) {
+      params[part.slice(1)] = decodeURIComponent(actual[index])
+    } else if (part !== actual[index]) {
+      return undefined
+    }
+  }
+  return params
+}
+
+effect async function dispatch({ method, path, body }: Request) {
+  for (const route of routes) {
+    const params = route.method === method ? match(route.pattern, path) : undefined
+    if (params) return await route.handler({ params, body })
+  }
+  throw new RouteNotFound({ method, path })
+}
+
+effect async function respond(request: Request) {
+  try {
+    return await dispatch(request)
+  } catch (error) {
+    return errorResponse(error)
+  }
+}
+
+export effect async function handle(request: Request) {
+  const started = Date.now()
+  const response = await Effect.catchAllDefect(respond(request), (defect) =>
+    Effect.as(Effect.logError("request failed", defect), internalError)
+  )
+  await Effect.annotateLogs(Effect.logInfo(`${request.method} ${request.path} ${response.status}`), {
+    durationMs: Date.now() - started
+  })
+  return response
+}
+
+export function withRequestId<A, E, R>(effect: Effect.Effect<A, E, R>) {
+  return Effect.annotateLogs(effect, { requestId: randomUUID() })
+}

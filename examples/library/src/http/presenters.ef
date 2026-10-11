@@ -1,0 +1,17 @@
+import type { Loan } from "../domain/loan.js"
+
+function iso(time: number): string {
+  return new Date(time).toISOString()
+}
+
+export function presentLoan(loan: Loan) {
+  return {
+    id: loan.id,
+    bookId: loan.bookId,
+    memberId: loan.memberId,
+    borrowedAt: iso(loan.borrowedAt),
+    dueAt: iso(loan.dueAt),
+    returnedAt: loan.returnedAt === undefined ? null : iso(loan.returnedAt),
+    feeInCents: loan.fee ?? null
+  }
+}

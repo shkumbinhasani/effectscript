@@ -1,0 +1,45 @@
+import { DatabaseSync, type SQLInputValue } from "node:sqlite"
+import { type Scope } from "effect"
+import { migrate } from "./migrations.js"
+
+export type Row = Record<string, unknown>
+
+export class Database extends Context.Tag("Database")<
+  Database,
+  {
+    readonly all: (sql: string, ...params: Array<SQLInputValue>) => Effect.Effect<ReadonlyArray<Row>>
+    readonly get: (sql: string, ...params: Array<SQLInputValue>) => Effect.Effect<Option.Option<Row>>
+    readonly run: (sql: string, ...params: Array<SQLInputValue>) => Effect.Effect<void>
+  }
+>() {}
+
+export class DatabaseError extends Data.TaggedError("DatabaseError")<{
+  readonly sql: string
+  readonly cause: unknown
+}> {}
+
+function statement<A>(sql: string, run: () => A): Effect.Effect<A> {
+  return Effect.orDie(Effect.try({ try: run, catch: (cause) => new DatabaseError({ sql, cause }) }))
+}
+
+effect async function open(path: string): DatabaseSync
+  requires Scope.Scope
+{
+  const db = await Effect.acquireRelease(
+    Effect.sync(() => new DatabaseSync(path)),
+    (db) => Effect.sync(() => db.close())
+  )
+  await statement("migrations", () => migrate(db))
+  await Effect.annotateLogs(Effect.logDebug("database opened"), { path })
+  return db
+}
+
+export effect async function makeDatabase(path: string) {
+  const db = await open(path)
+  return Database.of({
+    all: (sql, ...params) => statement(sql, () => db.prepare(sql).all(...params) as ReadonlyArray<Row>),
+    get: (sql, ...params) =>
+      statement(sql, () => Option.fromNullable(db.prepare(sql).get(...params) as Row | undefined)),
+    run: (sql, ...params) => statement(sql, () => void db.prepare(sql).run(...params))
+  })
+}

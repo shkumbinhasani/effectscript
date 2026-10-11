@@ -1,0 +1,48 @@
+import { LoanRepository } from "../application/ports.js"
+import type { Loan } from "../domain/loan.js"
+import { Database, type Row } from "./database.js"
+
+function toLoan(row: Row): Loan {
+  const loan: Loan = {
+    id: String(row.id),
+    bookId: String(row.book_id),
+    memberId: String(row.member_id),
+    borrowedAt: Number(row.borrowed_at),
+    dueAt: Number(row.due_at)
+  }
+  return row.returned_at === null
+    ? loan
+    : { ...loan, returnedAt: Number(row.returned_at), fee: Number(row.fee) }
+}
+
+export effect async function makeLoanRepository() {
+  const db = use Database
+  return LoanRepository.of({
+    findActiveByBook: (bookId) =>
+      Effect.map(
+        db.get("SELECT * FROM loans WHERE book_id = ? AND returned_at IS NULL", bookId),
+        Option.map(toLoan)
+      ),
+    listByMember: (memberId) =>
+      Effect.map(
+        db.all("SELECT * FROM loans WHERE member_id = ? ORDER BY borrowed_at", memberId),
+        (rows) => rows.map(toLoan)
+      ),
+    countActiveByMember: (memberId) =>
+      Effect.map(
+        db.get("SELECT COUNT(*) AS n FROM loans WHERE member_id = ? AND returned_at IS NULL", memberId),
+        (row) => Option.match(row, { onNone: () => 0, onSome: (r) => Number(r.n) })
+      ),
+    insert: (loan) =>
+      db.run(
+        "INSERT INTO loans (id, book_id, member_id, borrowed_at, due_at) VALUES (?, ?, ?, ?, ?)",
+        loan.id,
+        loan.bookId,
+        loan.memberId,
+        loan.borrowedAt,
+        loan.dueAt
+      ),
+    close: (loanId, returnedAt, fee) =>
+      db.run("UPDATE loans SET returned_at = ?, fee = ? WHERE id = ?", returnedAt, fee, loanId)
+  })
+}

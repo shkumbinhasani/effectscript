@@ -1,0 +1,68 @@
+import { Clock } from "effect"
+import {
+  BookNotFound,
+  BookUnavailable,
+  LoanLimitReached,
+  MemberNotFound,
+  NotOnLoan
+} from "../domain/errors.js"
+import type { Loan } from "../domain/loan.js"
+import { MaxActiveLoans, dueDate, lateFee } from "../domain/policies.js"
+import { getBook } from "./catalog.js"
+import { getMember } from "./members.js"
+import { BookRepository, Ids, LoanRepository, MemberRepository } from "./ports.js"
+
+export interface BorrowCommand {
+  readonly bookId: string
+  readonly memberId: string
+}
+
+export effect async function borrowBook({ bookId, memberId }: BorrowCommand): Loan
+  requires BookRepository | MemberRepository | LoanRepository | Ids
+  throws BookNotFound | MemberNotFound | BookUnavailable | LoanLimitReached
+{
+  const loans = use LoanRepository
+  const ids = use Ids
+
+  await getBook(bookId)
+  await getMember(memberId)
+
+  const current = await loans.findActiveByBook(bookId)
+  if (Option.isSome(current)) throw new BookUnavailable({ bookId, dueAt: current.value.dueAt })
+
+  if ((await loans.countActiveByMember(memberId)) >= MaxActiveLoans) {
+    throw new LoanLimitReached({ memberId, limit: MaxActiveLoans })
+  }
+
+  const now = await Clock.currentTimeMillis
+  const loan: Loan = { id: await ids.next, bookId, memberId, borrowedAt: now, dueAt: dueDate(now) }
+  await loans.insert(loan)
+  await Effect.annotateLogs(Effect.logInfo("book borrowed"), { bookId, memberId, loanId: loan.id })
+  return loan
+}
+
+export effect async function returnBook(bookId: string): Loan
+  requires BookRepository | LoanRepository
+  throws BookNotFound | NotOnLoan
+{
+  const loans = use LoanRepository
+
+  await getBook(bookId)
+  const current = await loans.findActiveByBook(bookId)
+  if (Option.isNone(current)) throw new NotOnLoan({ bookId })
+
+  const now = await Clock.currentTimeMillis
+  const fee = lateFee(current.value.dueAt, now)
+  await loans.close(current.value.id, now, fee)
+  await Effect.annotateLogs(Effect.logInfo("book returned"), { bookId, fee })
+  return { ...current.value, returnedAt: now, fee }
+}
+
+export effect async function memberLoans(memberId: string): ReadonlyArray<Loan>
+  requires MemberRepository | LoanRepository
+  throws MemberNotFound
+{
+  const loans = use LoanRepository
+  await getMember(memberId)
+  return await loans.listByMember(memberId)
+}

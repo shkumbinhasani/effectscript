@@ -1,0 +1,36 @@
+import type { DatabaseSync } from "node:sqlite"
+
+const migrations: ReadonlyArray<string> = [
+  `CREATE TABLE books (
+     id TEXT PRIMARY KEY,
+     title TEXT NOT NULL,
+     author TEXT NOT NULL,
+     isbn TEXT
+   )`,
+  `CREATE TABLE members (
+     id TEXT PRIMARY KEY,
+     name TEXT NOT NULL,
+     email TEXT NOT NULL UNIQUE
+   )`,
+  `CREATE TABLE loans (
+     id TEXT PRIMARY KEY,
+     book_id TEXT NOT NULL REFERENCES books(id),
+     member_id TEXT NOT NULL REFERENCES members(id),
+     borrowed_at INTEGER NOT NULL,
+     due_at INTEGER NOT NULL,
+     returned_at INTEGER,
+     fee INTEGER
+   )`,
+  `CREATE UNIQUE INDEX one_active_loan_per_book ON loans(book_id) WHERE returned_at IS NULL`
+]
+
+export function migrate(db: DatabaseSync): void {
+  db.exec("PRAGMA foreign_keys = ON")
+  const version = Number((db.prepare("PRAGMA user_version").get() as { user_version: number }).user_version)
+  for (const [index, sql] of migrations.entries()) {
+    if (index >= version) {
+      db.exec(sql)
+      db.exec(`PRAGMA user_version = ${index + 1}`)
+    }
+  }
+}
