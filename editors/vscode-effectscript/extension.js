@@ -31,6 +31,9 @@ function findCompiler() {
 }
 
 async function start() {
+  if (!vscode.workspace.isTrusted) {
+    return
+  }
   const compiler = findCompiler()
   if (!compiler) {
     vscode.window.showErrorMessage(
@@ -68,6 +71,7 @@ async function activate(context) {
       await stop()
       await start()
     }),
+    vscode.workspace.onDidGrantWorkspaceTrust(() => start()),
     vscode.workspace.onDidChangeConfiguration(async (event) => {
       if (event.affectsConfiguration("effectscript")) {
         await stop()

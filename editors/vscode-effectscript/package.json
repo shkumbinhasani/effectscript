@@ -2,22 +2,31 @@
   "name": "effectscript",
   "displayName": "EffectScript",
   "description": "EffectScript (.ef) language support: highlighting, diagnostics, hover, completions and navigation",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "effectscript",
   "license": "MIT",
   "private": true,
   "engines": {
     "vscode": "^1.90.0"
   },
-  "categories": ["Programming Languages"],
+  "categories": [
+    "Programming Languages"
+  ],
   "main": "./extension.js",
-  "activationEvents": ["onLanguage:effectscript"],
+  "activationEvents": [
+    "onLanguage:effectscript"
+  ],
   "contributes": {
     "languages": [
       {
         "id": "effectscript",
-        "aliases": ["EffectScript", "effectscript"],
-        "extensions": [".ef"],
+        "aliases": [
+          "EffectScript",
+          "effectscript"
+        ],
+        "extensions": [
+          ".ef"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -30,7 +39,9 @@
       {
         "scopeName": "source.ef.keywords",
         "path": "./syntaxes/effectscript.keywords.tmLanguage.json",
-        "injectTo": ["source.ef"]
+        "injectTo": [
+          "source.ef"
+        ]
       }
     ],
     "configuration": {
@@ -57,5 +68,11 @@
   },
   "dependencies": {
     "vscode-languageclient": "9.0.1"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Highlighting works in Restricted Mode. The language server starts once the workspace is trusted, because it runs the efc binary found in the workspace."
+    }
   }
 }
