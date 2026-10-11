@@ -66,6 +66,9 @@ impl<'a> Parser<'a> {
             | SyntaxKind::NullKeyword
             | SyntaxKind::TrueKeyword
             | SyntaxKind::FalseKeyword => {
+                if self.token == SyntaxKind::ThisKeyword {
+                    self.ef_check_unsupported_reference("this");
+                }
                 return self.parse_keyword_expression();
             }
             SyntaxKind::OpenParenToken => {
@@ -107,6 +110,11 @@ impl<'a> Parser<'a> {
             }
             SyntaxKind::PrivateIdentifier => {
                 return self.parse_private_identifier();
+            }
+            SyntaxKind::Identifier
+                if self.ef.enabled && self.scanner.token_value() == "arguments" =>
+            {
+                self.ef_check_unsupported_reference("arguments");
             }
             _ => {}
         }
@@ -995,6 +1003,9 @@ impl<'a> Parser<'a> {
                 SyntaxKind::StaticKeyword => {
                     self.next_token();
                     continue;
+                }
+                SyntaxKind::Identifier if self.ef.enabled => {
+                    return self.scan_effect_function_start();
                 }
                 _ => {}
             }

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "noUnusedLocals": true,
+    
+    "declaration": true,
+    "outDir": "out",
+    "skipLibCheck": true,
+    "types": []
+  },
+  "files": ["try.ef"]
+}

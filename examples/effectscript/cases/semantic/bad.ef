@@ -1,0 +1,104 @@
+import { Context, Data, Effect } from "effect"
+
+class DbError extends Data.TaggedError("DbError")<{}> {}
+class NotFound extends Data.TaggedError("NotFound")<{}> {}
+class Other extends Data.TaggedError("Other")<{}> {}
+
+class Database extends Context.Tag("Database")<Database, { readonly find: Effect.Effect<string, DbError> }>() {}
+class Logger extends Context.Tag("Logger")<Logger, { readonly log: (m: string) => Effect.Effect<void> }>() {}
+
+effect async function undeclaredError(): string
+  requires Database
+  throws NotFound
+{
+  const db = use Database
+  return await db.find
+}
+
+effect async function undeclaredService(): void
+  requires Database
+{
+  const logger = use Logger
+  await logger.log("hi")
+}
+
+effect async function undeclaredThrow(): number
+  throws NotFound
+{
+  if (Math.random() > 0.5) throw new Other()
+  throw new NotFound()
+}
+
+effect async function wrongSuccess(): number {
+  return "nope"
+}
+
+effect async function awaitsPromise(): number {
+  return await Promise.resolve(1)
+}
+
+effect async function awaitsNumber(): number {
+  return await 1
+}
+
+effect async function usesNonService(): number {
+  const x = use Math
+  return 1
+}
+
+
+
+
+
+
+effect async function handled(): string
+  requires Database
+{
+  const db = use Database
+  return await Effect.catchAll(db.find, () => Effect.succeed("fallback"))
+}
+
+export {}
+
+effect async function catchIsTyped(): string
+  requires Database
+{
+  const db = use Database
+  try {
+    return await db.find
+  } catch (e) {
+    const n: number = e
+    return "x"
+  }
+}
+
+effect async function rethrowUndeclared(): string
+  requires Database
+  throws NotFound
+{
+  const db = use Database
+  try {
+    return await db.find
+  } catch (e) {
+    throw e
+  }
+}
+
+effect async function finallyFails(): number
+  requires Database
+{
+  const db = use Database
+  try {
+    return 1
+  } finally {
+    await db.find
+  }
+}
+
+effect async function wrongReturnInTry(): number {
+  try {
+    return "nope"
+  } catch {
+    return 1
+  }
+}

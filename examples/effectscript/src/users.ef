@@ -1,0 +1,62 @@
+import { Database, Logger, formatName } from "./db.js"
+import { DbError, UserNotFound, type User } from "./errors.js"
+
+export function add(a: number, b: number): number {
+  return a + b
+}
+
+export async function addLater(a: number, b: number): Promise<number> {
+  return a + b
+}
+
+export let bodyRuns = 0
+
+export effect async function getUser(id: string): User
+  requires Database
+  throws UserNotFound | DbError
+{
+  bodyRuns++
+  const db = use Database
+  const user = await db.findUser(id)
+
+  if (!user) throw new UserNotFound({ id })
+
+  return user
+}
+
+export effect async function getName(id: string): string
+  requires Database | Logger
+  throws UserNotFound | DbError
+{
+  const logger = use Logger
+  const user = await getUser(id)
+  await logger.info(`loaded ${user.id}`)
+  return formatName(user)
+}
+
+export effect async function getNames(ids: ReadonlyArray<string>): Array<string>
+  requires Database | Logger
+  throws UserNotFound | DbError
+{
+  const names: Array<string> = []
+  for (const id of ids) {
+    names.push(await getName(id))
+  }
+  return names
+}
+
+export effect async function answer(): number {
+  return 42
+}
+
+export effect async function orDefault<A, E, R>(effect: Effect.Effect<A, E, R>, fallback: A): A
+  requires R
+{
+  return await Effect.orElseSucceed(effect, () => fallback)
+}
+
+export effect async function findOrGuest(id: string) {
+  const db = use Database
+  const user = await db.findUser(id)
+  return user ?? { id, name: "guest" }
+}

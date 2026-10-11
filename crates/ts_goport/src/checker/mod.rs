@@ -35,6 +35,7 @@ pub mod checker_p32;
 pub mod checker_p33;
 pub mod checker_p34;
 pub mod checker_p35;
+pub mod effectscript;
 pub mod emit_resolver_p1;
 pub mod emit_resolver_p2;
 pub mod exports;

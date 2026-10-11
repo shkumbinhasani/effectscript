@@ -356,6 +356,20 @@ impl<'a> Parser<'a> {
         is_async: bool,
         allow_return_type_in_arrow_function: bool,
     ) -> Node {
+        let entered = self.ef_enter_arrow();
+        let body = self.parse_arrow_function_expression_body_worker(
+            is_async,
+            allow_return_type_in_arrow_function,
+        );
+        self.ef_exit_function_body(entered);
+        body
+    }
+
+    fn parse_arrow_function_expression_body_worker(
+        &mut self,
+        is_async: bool,
+        allow_return_type_in_arrow_function: bool,
+    ) -> Node {
         if self.token == SyntaxKind::OpenBraceToken {
             return self.parse_function_block(
                 if is_async {
@@ -688,6 +702,9 @@ impl<'a> Parser<'a> {
 
     // Go: parser.go:4725 parseUnaryExpressionOrHigher
     pub fn parse_unary_expression_or_higher(&mut self) -> Node {
+        if self.token == SyntaxKind::Identifier && self.is_use_expression() {
+            return self.parse_use_expression();
+        }
         // ES7 UpdateExpression:
         //      1) LeftHandSideExpression[?Yield]
         //      2) LeftHandSideExpression[?Yield][no LineTerminator here]++
@@ -1327,6 +1344,7 @@ impl<'a> Parser<'a> {
             }
             // PORT: Go falls through from the await case to the default case.
             SyntaxKind::AwaitKeyword if self.is_await_expression() => self.parse_await_expression(),
+            SyntaxKind::Identifier if self.is_use_expression() => self.parse_use_expression(),
             _ => self.parse_update_expression(),
         }
     }
@@ -1386,6 +1404,9 @@ impl<'a> Parser<'a> {
         let pos = self.node_pos();
         self.next_token();
         let expression = self.parse_simple_unary_expression();
+        if let Some(lowered) = self.ef_lower_await(pos, expression) {
+            return lowered;
+        }
         let node = self.factory.new_await_expression(expression);
         self.finish_node(node, pos)
     }

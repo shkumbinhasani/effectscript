@@ -1,0 +1,59 @@
+import { Context, Data, Effect } from "effect"
+
+class DbError extends Data.TaggedError("DbError")<{}> {}
+class NotFound extends Data.TaggedError("NotFound")<{}> {}
+class Other extends Data.TaggedError("Other")<{}> {}
+
+class Database extends Context.Tag("Database")<Database, { readonly find: Effect.Effect<string, DbError> }>() {}
+class Logger extends Context.Tag("Logger")<Logger, { readonly log: (m: string) => Effect.Effect<void> }>() {}
+
+effect async function returnInFinally(): number {
+  try {
+    return 1
+  } finally {
+    return 2
+  }
+}
+
+effect async function labeledJump(): number {
+  outer: for (const x of [1]) {
+    try {
+      break outer
+    } catch {}
+  }
+  return 1
+}
+
+effect async function usesThis(): number {
+  return this.value
+}
+
+effect function missingAsync(): number {
+  return 1
+}
+
+effect async function clausesOnly()
+  throws NotFound
+{
+  return 1
+}
+
+async function promises(): Promise<number> {
+  const x = use Database
+  return 1
+}
+
+effect async function* generatorEffect(): number {
+  return 1
+}
+
+effect async function usesArguments(): number {
+  return arguments.length
+}
+
+effect async function forAwait(): number {
+  for await (const x of [1]) {}
+  return 1
+}
+
+export {}

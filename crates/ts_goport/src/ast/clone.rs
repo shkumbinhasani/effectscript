@@ -2343,6 +2343,13 @@ impl NodeFactory {
         node
     }
 
+    #[must_use]
+    pub fn deep_clone_with_location(&self, node: Node) -> Node {
+        let node = get_deep_clone_visitor(self, false).visit_node(node);
+        set_parent_in_children(node);
+        node
+    }
+
     // Go: ast/deepclone.go:84 DeepCloneReparseModifiers
     #[must_use]
     pub fn deep_clone_reparse_modifiers(&self, modifiers: ModifierList) -> ModifierList {

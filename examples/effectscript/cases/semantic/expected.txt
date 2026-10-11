@@ -1,0 +1,11 @@
+bad.ef(15,16): error TS378001: Effect can fail with 'DbError', which is not declared in the 'throws' clause of 'undeclaredError'.
+bad.ef(21,22): error TS378002: Effect requires 'Logger', which is not declared in the 'requires' clause of 'undeclaredService'.
+bad.ef(28,34): error TS378003: Thrown value of type 'Other' is not declared in the 'throws' clause of 'undeclaredThrow'.
+bad.ef(33,3): error TS2322: Type 'string' is not assignable to type 'number'.
+bad.ef(37,16): error TS378004: A Promise cannot be awaited in an effect function. Convert it with 'Effect.promise' or 'Effect.tryPromise'.
+bad.ef(41,16): error TS378005: Expression of type '1' is not an Effect and cannot be awaited in an effect function.
+bad.ef(45,17): error TS378012: Expression of type 'Math' is not an Effect service and cannot be used with 'use'.
+bad.ef(70,11): error TS2322: Type 'DbError' is not assignable to type 'number'.
+bad.ef(80,3): error TS378001: Effect can fail with 'DbError', which is not declared in the 'throws' clause of 'rethrowUndeclared'.
+bad.ef(94,11): error TS378013: A 'finally' block in an effect function cannot fail. Handle 'DbError' inside the block.
+bad.ef(100,12): error TS2322: Type 'string' is not assignable to type 'number'.

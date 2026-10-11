@@ -1,0 +1,4 @@
+node_modules/
+dist/
+consumer-dist/
+cases/*/out/

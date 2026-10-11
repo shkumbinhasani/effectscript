@@ -90,7 +90,7 @@ pub fn get_script_kind_from_file_name(file_name: &str) -> ScriptKind {
         match ext.as_str() {
             EXTENSION_JS | EXTENSION_CJS | EXTENSION_MJS => return ScriptKind::JS,
             EXTENSION_JSX => return ScriptKind::JSX,
-            EXTENSION_TS | EXTENSION_CTS | EXTENSION_MTS => return ScriptKind::TS,
+            EXTENSION_TS | EXTENSION_EF | EXTENSION_CTS | EXTENSION_MTS => return ScriptKind::TS,
             EXTENSION_TSX => return ScriptKind::TSX,
             EXTENSION_JSON => return ScriptKind::JSON,
             _ => {}

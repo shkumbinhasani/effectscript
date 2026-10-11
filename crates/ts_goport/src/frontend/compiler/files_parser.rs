@@ -1374,6 +1374,7 @@ pub(crate) fn join_flattened_extensions(extensions: &[Vec<String>]) -> String {
         .iter()
         .flatten()
         .map(String::as_str)
+        .filter(|extension| *extension != EXTENSION_EF)
         .collect::<Vec<_>>()
         .join("', '")
 }
@@ -3662,22 +3663,37 @@ fn guess_relative_import(fs: &dyn Fs, containing: &str, specifier: &str) -> Opti
             .collect()
     };
     let candidates = if let Some(stem) = base.strip_suffix(EXTENSION_JS) {
-        with(stem, &[EXTENSION_TS, EXTENSION_TSX, EXTENSION_DTS])
+        with(
+            stem,
+            &[EXTENSION_TS, EXTENSION_EF, EXTENSION_TSX, EXTENSION_DTS],
+        )
     } else if let Some(stem) = base.strip_suffix(EXTENSION_MJS) {
         with(stem, &[EXTENSION_MTS, EXTENSION_DMTS])
     } else if let Some(stem) = base.strip_suffix(EXTENSION_CJS) {
         with(stem, &[EXTENSION_CTS, EXTENSION_DCTS])
-    } else if [EXTENSION_TS, EXTENSION_TSX, EXTENSION_MTS, EXTENSION_CTS]
-        .iter()
-        .any(|e| base.ends_with(e))
+    } else if [
+        EXTENSION_TS,
+        EXTENSION_EF,
+        EXTENSION_TSX,
+        EXTENSION_MTS,
+        EXTENSION_CTS,
+    ]
+    .iter()
+    .any(|e| base.ends_with(e))
     {
         vec![base]
     } else if get_base_file_name(&base).contains('.') {
         return None;
     } else {
         let index = combine_paths(&base, &["index"]);
-        let mut candidates = with(&base, &[EXTENSION_TS, EXTENSION_TSX, EXTENSION_DTS]);
-        candidates.extend(with(&index, &[EXTENSION_TS, EXTENSION_TSX, EXTENSION_DTS]));
+        let mut candidates = with(
+            &base,
+            &[EXTENSION_TS, EXTENSION_EF, EXTENSION_TSX, EXTENSION_DTS],
+        );
+        candidates.extend(with(
+            &index,
+            &[EXTENSION_TS, EXTENSION_EF, EXTENSION_TSX, EXTENSION_DTS],
+        ));
         candidates
     };
     candidates.into_iter().find(|name| fs.file_exists(name))

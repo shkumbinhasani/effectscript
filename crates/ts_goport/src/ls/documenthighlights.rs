@@ -827,6 +827,9 @@ pub fn get_switch_case_default_occurrences(node: Node, source_file: Node) -> Vec
 // Go: ls/documenthighlights.go:563 aggregateAllBreakAndContinueStatements
 pub fn aggregate_all_break_and_continue_statements(node: Node, source_file: Node) -> Vec<Node> {
     if is_break_or_continue_statement(node) {
+        if position_is_synthesized(node.pos()) {
+            return Vec::new();
+        }
         return vec![node];
     }
     if is_function_like(node) {

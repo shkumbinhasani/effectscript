@@ -284,6 +284,9 @@ impl LanguageService {
         options: &lsutil::FormatCodeSettings,
         r: TextRange,
     ) -> Vec<TextChange> {
+        if is_effectscript_source(file) {
+            return Vec::new();
+        }
         let ctx = &crate::format::with_format_code_settings(
             ctx,
             options,
@@ -299,6 +302,9 @@ impl LanguageService {
         file: Node,
         options: &lsutil::FormatCodeSettings,
     ) -> Vec<TextChange> {
+        if is_effectscript_source(file) {
+            return Vec::new();
+        }
         let ctx = &crate::format::with_format_code_settings(
             ctx,
             options,
@@ -316,6 +322,9 @@ impl LanguageService {
         position: i32,
         key: &str,
     ) -> Vec<TextChange> {
+        if is_effectscript_source(file) {
+            return Vec::new();
+        }
         let ctx = &crate::format::with_format_code_settings(
             ctx,
             options,
@@ -448,4 +457,8 @@ mod tests {
             assert_eq!(&result, want, "{name}");
         }
     }
+}
+
+fn is_effectscript_source(file: Node) -> bool {
+    crate::effectscript::is_effectscript_source_file(file)
 }

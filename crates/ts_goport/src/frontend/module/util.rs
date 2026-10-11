@@ -185,6 +185,7 @@ pub fn get_resolution_diagnostic(
     // PORT: Go string `switch` is an if/else chain.
     let ext = resolved_module.extension.as_str();
     if ext == EXTENSION_TS
+        || ext == EXTENSION_EF
         || ext == EXTENSION_DTS
         || ext == EXTENSION_MTS
         || ext == EXTENSION_DMTS
@@ -215,7 +216,7 @@ pub fn get_resolution_diagnostic(
 #[must_use]
 pub fn try_get_js_extension_for_file(file_name: &str, options: &CompilerOptions) -> &'static str {
     let ext = try_get_extension_from_path(file_name);
-    if ext == EXTENSION_TS || ext == EXTENSION_DTS {
+    if ext == EXTENSION_TS || ext == EXTENSION_EF || ext == EXTENSION_DTS {
         EXTENSION_JS
     } else if ext == EXTENSION_TSX {
         if options.jsx == JsxEmit::PRESERVE {

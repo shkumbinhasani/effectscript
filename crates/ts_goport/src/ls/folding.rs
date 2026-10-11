@@ -130,14 +130,19 @@ impl LanguageService {
         let depth_remaining = 40;
         let mut current = 0;
 
-        let statements = source_file.statements();
+        let effectscript_file = crate::effectscript::is_effectscript_source_file(source_file);
+        let statements: Vec<Node> = source_file
+            .statements()
+            .iter()
+            .filter(|s| !effectscript_file || !s.flags().intersects(NodeFlags::REPARSED))
+            .collect();
         let n = statements.len();
         let mut folding_range = Vec::with_capacity(40);
         while current < n {
-            while current < n && !is_any_import_syntax(statements.get(current)) {
+            while current < n && !is_any_import_syntax(statements[current]) {
                 folding_range.extend(visit_node(
                     ctx,
-                    statements.get(current),
+                    statements[current],
                     depth_remaining,
                     source_file,
                     self,
@@ -148,10 +153,10 @@ impl LanguageService {
                 break;
             }
             let first_import = current;
-            while current < n && is_any_import_syntax(statements.get(current)) {
+            while current < n && is_any_import_syntax(statements[current]) {
                 folding_range.extend(visit_node(
                     ctx,
-                    statements.get(current),
+                    statements[current],
                     depth_remaining,
                     source_file,
                     self,
@@ -165,14 +170,14 @@ impl LanguageService {
                     ctx,
                     astnav::get_start_of_node(
                         astnav::find_child_of_kind(
-                            statements.get(first_import),
+                            statements[first_import],
                             SyntaxKind::ImportKeyword,
                             source_file,
                         ),
                         source_file,
                         false, /*includeJSDoc*/
                     ),
-                    statements.get(last_import).end(),
+                    statements[last_import].end(),
                     folding_range_kind,
                     source_file,
                     self,

@@ -32,6 +32,7 @@ pub mod core;
 pub mod declarations;
 // Native Effect diagnostics (Effect-TS/tsgo port).
 pub mod effect;
+pub mod effectscript;
 pub use goport_util::diag;
 pub use goport_util::diagnostics;
 pub mod diagnostics_loc;

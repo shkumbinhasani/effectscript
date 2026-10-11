@@ -100,6 +100,7 @@ pub fn process_entrypoint_ending(
         &specifier,
         &[
             tspath::EXTENSION_TS,
+            tspath::EXTENSION_EF,
             tspath::EXTENSION_TSX,
             tspath::EXTENSION_MTS,
             tspath::EXTENSION_CTS,

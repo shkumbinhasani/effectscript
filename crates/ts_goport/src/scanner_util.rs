@@ -1824,6 +1824,9 @@ pub fn get_text_of_js_doc_comment(comment: NodeList) -> String {
 
 // Go: scanner/utilities.go:122 DeclarationNameToString
 pub fn declaration_name_to_string(name: Node) -> String {
+    if name.is_some() && name.pos() < 0 && name.kind() == SyntaxKind::Identifier {
+        return name.text().to_string();
+    }
     if name.is_nil() || name.pos() == name.end() {
         return "(Missing)".to_string();
     }

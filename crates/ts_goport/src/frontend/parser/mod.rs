@@ -1,4 +1,5 @@
 //! Go package `parser`.
+pub mod effect_lowering;
 pub mod jsdoc;
 pub mod lib_parse_snapshot;
 pub mod parser_p1;

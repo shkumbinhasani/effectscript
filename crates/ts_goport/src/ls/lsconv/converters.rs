@@ -704,7 +704,7 @@ impl Script for OriginalTextScript<'_> {
 #[must_use]
 pub fn language_kind_to_script_kind(language_id: &lsproto::LanguageKind) -> ScriptKind {
     match &*language_id.0 {
-        "typescript" => ScriptKind::TS,
+        "typescript" | "effectscript" => ScriptKind::TS,
         "typescriptreact" => ScriptKind::TSX,
         "javascript" => ScriptKind::JS,
         "javascriptreact" => ScriptKind::JSX,

@@ -1583,6 +1583,7 @@ pub fn get_set_accessor_value_parameter(accessor: Node) -> Node {
 mod tspath_up2 {
     // Go: tspath/extension.go:9
     pub const EXTENSION_TS: &str = ".ts";
+    pub const EXTENSION_EF: &str = ".ef";
     pub const EXTENSION_TSX: &str = ".tsx";
     pub const EXTENSION_DTS: &str = ".d.ts";
     pub const EXTENSION_JS: &str = ".js";
@@ -1596,7 +1597,7 @@ mod tspath_up2 {
     pub const EXTENSION_DCTS: &str = ".d.cts";
 
     // Go: tspath/extension.go:43 extensionsToRemove
-    const EXTENSIONS_TO_REMOVE: [&str; 12] = [
+    const EXTENSIONS_TO_REMOVE: [&str; 13] = [
         EXTENSION_DTS,
         EXTENSION_DMTS,
         EXTENSION_DCTS,
@@ -1605,6 +1606,7 @@ mod tspath_up2 {
         EXTENSION_CJS,
         EXTENSION_CTS,
         EXTENSION_TS,
+        EXTENSION_EF,
         EXTENSION_JS,
         EXTENSION_TSX,
         EXTENSION_JSX,

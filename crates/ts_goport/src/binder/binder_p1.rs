@@ -2204,9 +2204,9 @@ fn try_parse_pattern(pattern: &str) -> Pattern {
 // PORT: private copy; the contract names no crate module for Go `tspath`.
 fn remove_file_extension(path: &str) -> &str {
     // Go: tspath/extension.go:43 extensionsToRemove
-    const EXTENSIONS_TO_REMOVE: [&str; 12] = [
-        ".d.ts", ".d.mts", ".d.cts", ".mjs", ".mts", ".cjs", ".cts", ".ts", ".js", ".tsx", ".jsx",
-        ".json",
+    const EXTENSIONS_TO_REMOVE: [&str; 13] = [
+        ".d.ts", ".d.mts", ".d.cts", ".mjs", ".mts", ".cjs", ".cts", ".ts", ".ef", ".js", ".tsx",
+        ".jsx", ".json",
     ];
     // Remove any known extension even if it has more than one dot
     for ext in EXTENSIONS_TO_REMOVE {

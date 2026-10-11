@@ -992,7 +992,9 @@ impl Checker {
                     || is_import_specifier(declaration)
                     || is_namespace_import(declaration)
                 {
-                    if !is_identifier_that_starts_with_underscore(declaration.name()) {
+                    if declaration.pos() >= 0
+                        && !is_identifier_that_starts_with_underscore(declaration.name())
+                    {
                         let import_clause = import_clause_from_imported(declaration);
                         import_clauses
                             .entry(import_clause)

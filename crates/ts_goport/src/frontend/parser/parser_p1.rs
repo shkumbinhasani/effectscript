@@ -190,6 +190,7 @@ pub struct Parser<'a> {
     /// list or diagnostic that ends there or later may need a map to the
     /// file (`jsdoc_tail_pos`).
     pub jsdoc_tail_first: i32,
+    pub ef: super::effect_lowering::EfState,
 }
 
 // Go: parser.go:104 newParser
@@ -227,6 +228,7 @@ pub fn new_parser<'a>() -> Parser<'a> {
         store: 0,
         jsdoc_cut_text: None,
         jsdoc_tail_first: i32::MAX,
+        ef: super::effect_lowering::EfState::default(),
     };
     res.initialize_closures();
     res
@@ -616,6 +618,7 @@ impl<'a> Parser<'a> {
         // is not needed here.
         self.scanner.reset();
         self.opts = opts.clone();
+        self.ef.reset(&opts.file_name);
         self.source_text = source_text;
         self.script_kind = script_kind;
         self.language_variant = get_language_variant(self.script_kind);
@@ -806,6 +809,10 @@ impl<'a> Parser<'a> {
         }
         if !self.reparse_list.is_empty() {
             statements.append(&mut self.reparse_list);
+        }
+        let injected = self.ef_injected_imports(&statements);
+        if !injected.is_empty() {
+            statements.splice(0..0, injected);
         }
         let list = self.new_node_list(TextRange::new(pos, end), &statements);
         let node = self
@@ -1665,7 +1672,7 @@ impl<'a> Parser<'a> {
 
     // Go: parser.go:1063 parseStatement
     pub fn parse_statement(&mut self) -> Node {
-        match self.token {
+        match { self.token } {
             SyntaxKind::SemicolonToken => return self.parse_empty_statement(),
             SyntaxKind::OpenBraceToken => {
                 return self.parse_block(false /*ignoreMissingOpenBrace*/, None);
@@ -1725,20 +1732,44 @@ impl<'a> Parser<'a> {
                 );
             }
             SyntaxKind::IfKeyword => return self.parse_if_statement(),
-            SyntaxKind::DoKeyword => return self.parse_do_statement(),
-            SyntaxKind::WhileKeyword => return self.parse_while_statement(),
-            SyntaxKind::ForKeyword => return self.parse_for_or_for_in_or_for_of_statement(),
+            SyntaxKind::DoKeyword => {
+                let entered = self.ef_enter_jump_target(true);
+                let statement = self.parse_do_statement();
+                self.ef_exit_jump_target(entered, true);
+                return statement;
+            }
+            SyntaxKind::WhileKeyword => {
+                let entered = self.ef_enter_jump_target(true);
+                let statement = self.parse_while_statement();
+                self.ef_exit_jump_target(entered, true);
+                return statement;
+            }
+            SyntaxKind::ForKeyword => {
+                let entered = self.ef_enter_jump_target(true);
+                let statement = self.parse_for_or_for_in_or_for_of_statement();
+                self.ef_exit_jump_target(entered, true);
+                return statement;
+            }
             SyntaxKind::ContinueKeyword => return self.parse_continue_statement(),
             SyntaxKind::BreakKeyword => return self.parse_break_statement(),
             SyntaxKind::ReturnKeyword => return self.parse_return_statement(),
             SyntaxKind::WithKeyword => return self.parse_with_statement(),
-            SyntaxKind::SwitchKeyword => return self.parse_switch_statement(),
+            SyntaxKind::SwitchKeyword => {
+                let entered = self.ef_enter_jump_target(false);
+                let statement = self.parse_switch_statement();
+                self.ef_exit_jump_target(entered, false);
+                return statement;
+            }
             SyntaxKind::ThrowKeyword => return self.parse_throw_statement(),
             SyntaxKind::TryKeyword | SyntaxKind::CatchKeyword | SyntaxKind::FinallyKeyword => {
                 return self.parse_try_statement();
             }
             SyntaxKind::DebuggerKeyword => return self.parse_debugger_statement(),
             SyntaxKind::AtToken => return self.parse_declaration(),
+            SyntaxKind::Identifier if self.is_effect_function_start() => {
+                let (pos, jsdoc) = (self.node_pos(), self.jsdoc_scanner_info());
+                return self.parse_effect_function_declaration(pos, jsdoc, ModifierList::NIL);
+            }
             SyntaxKind::AsyncKeyword
             | SyntaxKind::InterfaceKeyword
             | SyntaxKind::TypeKeyword
@@ -1805,7 +1836,7 @@ impl<'a> Parser<'a> {
         jsdoc: JsdocScannerInfo,
         modifiers: ModifierList,
     ) -> Node {
-        match self.token {
+        match { self.token } {
             SyntaxKind::VarKeyword
             | SyntaxKind::LetKeyword
             | SyntaxKind::ConstKeyword
@@ -1819,6 +1850,9 @@ impl<'a> Parser<'a> {
             }
             SyntaxKind::FunctionKeyword => {
                 return self.parse_function_declaration(pos, jsdoc, modifiers);
+            }
+            SyntaxKind::Identifier if self.is_effect_function_start() => {
+                return self.parse_effect_function_declaration(pos, jsdoc, modifiers);
             }
             SyntaxKind::ClassKeyword => return self.parse_class_declaration(pos, jsdoc, modifiers),
             SyntaxKind::InterfaceKeyword => {
@@ -2010,6 +2044,7 @@ impl<'a> Parser<'a> {
         let jsdoc = self.jsdoc_scanner_info();
         self.parse_expected(SyntaxKind::ForKeyword);
         let await_token = self.parse_optional_token(SyntaxKind::AwaitKeyword);
+        self.ef_check_for_await(await_token);
         self.parse_expected(SyntaxKind::OpenParenToken);
         let mut initializer = Node::NIL;
         if self.token != SyntaxKind::SemicolonToken {
@@ -2086,6 +2121,10 @@ impl<'a> Parser<'a> {
         self.parse_expected(SyntaxKind::BreakKeyword);
         let label = self.parse_identifier_unless_at_semicolon();
         self.parse_semicolon();
+        if let Some(lowered) = self.ef_lower_jump(SyntaxKind::BreakKeyword, label, pos) {
+            self.with_js_doc(lowered, jsdoc);
+            return lowered;
+        }
         let node = self.factory.new_break_statement(label);
         let result = self.finish_node(node, pos);
         self.with_js_doc(result, jsdoc);
@@ -2099,6 +2138,10 @@ impl<'a> Parser<'a> {
         self.parse_expected(SyntaxKind::ContinueKeyword);
         let label = self.parse_identifier_unless_at_semicolon();
         self.parse_semicolon();
+        if let Some(lowered) = self.ef_lower_jump(SyntaxKind::ContinueKeyword, label, pos) {
+            self.with_js_doc(lowered, jsdoc);
+            return lowered;
+        }
         let node = self.factory.new_continue_statement(label);
         let result = self.finish_node(node, pos);
         self.with_js_doc(result, jsdoc);
@@ -2123,6 +2166,7 @@ impl<'a> Parser<'a> {
             expression = self.parse_expression_allow_in();
         }
         self.parse_semicolon();
+        let expression = self.ef_lower_return_value(pos, expression);
         let node = self.factory.new_return_statement(expression);
         let result = self.finish_node(node, pos);
         self.with_js_doc(result, jsdoc);

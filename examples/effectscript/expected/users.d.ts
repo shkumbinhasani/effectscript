@@ -1,0 +1,12 @@
+import { Effect } from "effect";
+import { Database, Logger } from "./db.js";
+import { DbError, UserNotFound, type User } from "./errors.js";
+export declare function add(a: number, b: number): number;
+export declare function addLater(a: number, b: number): Promise<number>;
+export declare let bodyRuns: number;
+export declare function getUser(id: string): Effect.Effect<User, UserNotFound | DbError, Database>;
+export declare function getName(id: string): Effect.Effect<string, UserNotFound | DbError, Database | Logger>;
+export declare function getNames(ids: ReadonlyArray<string>): Effect.Effect<Array<string>, UserNotFound | DbError, Database | Logger>;
+export declare function answer(): Effect.Effect<number, never, never>;
+export declare function orDefault<A, E, R>(effect: Effect.Effect<A, E, R>, fallback: A): Effect.Effect<A, never, R>;
+export declare function findOrGuest(id: string): Effect.Effect<User, DbError, Database>;

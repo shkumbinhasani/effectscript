@@ -1,17 +1,77 @@
-# ts-rust (aka tsc-rs)
+# EffectScript
+
+EffectScript is TypeScript with [Effect](https://effect.website) built into the
+language. Files end in `.ef`, accept all TypeScript, and add effect
+functions with checked error and requirement channels:
+
+```ts
+// users.ef: no imports of Effect needed
+export effect async function getUser(id: string): User
+  requires Database
+  throws UserNotFound | DbError
+{
+  const db = use Database
+  const user = await db.findUser(id)
+
+  if (!user) throw new UserNotFound({ id })
+
+  return user
+}
+```
+
+`getUser("1")` returns an `Effect.Effect<User, UserNotFound | DbError, Database>`
+that runs on the real `effect` runtime:
+
+```ts
+const user = await Effect.runPromise(getUser("1").pipe(Effect.provide(DatabaseLive)))
+```
+
+- `effect async function` returns a lazy Effect. The annotation is the
+  success type; `requires` and `throws` declare the context and the errors.
+- `await` composes Effects, `use Tag` gets a service, and `throw` is a typed
+  failure. `try`/`catch`/`finally` catches typed errors, and the `catch`
+  variable has their union type.
+- The compiler checks the clauses: an undeclared error or service is an
+  error at the `await` that causes it. Leave out the type and the clauses
+  and it infers all three channels.
+- `Effect`, `Context`, `Layer`, `Data`, `Option` and the other common
+  modules of `effect` are in scope without an import.
+- `.ef` and `.ts` files import each other and share one `tsconfig.json`.
+  The output is plain JavaScript and `.d.ts` files that any TypeScript
+  project can use.
+
+## Try it
+
+```sh
+cargo build --release -p ts_goport --bin efc
+cd examples/effectscript
+npm ci
+../../target/release/efc -p tsconfig.json
+node dist/main.js
+```
+
+`editors/vscode-effectscript` is a VS Code extension with highlighting,
+diagnostics, hover, completions and navigation for `.ef` files.
+
+[docs/effectscript.md](docs/effectscript.md) describes the language, the
+JavaScript it compiles to, the diagnostics, the editor setup and the limits.
+
+## About ts-rust (aka tsc-rs)
+
+The rest of this file is the README of [ts-rust](https://github.com/pingdotgg/ts-rust), the project this fork is built on.
 
 I wanted to see if LLMs could port the TypeScript compiler, checker and lsp to Rust. Turns out they can.
 
 It [cost over $420,000](#how-did-this-go) in tokens to do it, but you could probably have done it for ~$20k (see below)
 
-## Motivations
+### Motivations
 
 - Test model capabilities
 - Make a fast TypeScript type checker
 - Make a ts checker that can work in WASM with high performance
 - Memes
 
-## Warnings
+### Warnings
 
 **This is an early release.** It has 100% compatibility in every real world project we have
 tested. It should work as a drop in
@@ -19,7 +79,7 @@ replacement for the vast majority of apps. See [Known problems](#known-problems)
 
 Also worth mentioning: I've never read a line of this code.
 
-## Install
+### Install
 
 Be warned, I have no idea if this will actually work.
 
@@ -28,7 +88,7 @@ npm install -D tsc-rs
 npx tsc-rs -p tsconfig.json
 ```
 
-## How did this go?
+### How did this go?
 
 I used a lot of OpenAI models to try and complete this port. In total I did **over $400,000 in API priced tokens with GPT-5.6 Sol and GPT 6 Astra**. They wrote over 1.3m lines of Rust over multiple months of /goal loops and never got past like 84% compat.
 
@@ -40,18 +100,18 @@ I let it keep going, and it definitely did. Total token spend was **~$24,047 of 
 
 Expensive, for sure, but not that bad considering how much work has went into typescript-go.
 
-# "The Slop Line"
+## "The Slop Line"
 
 Everything below this was written by my LLMs, not me. 
 
-## What actually is this?
+### What actually is this?
 
 ts-rust is a direct port of Microsoft's native TypeScript compiler, which is written in Go
 ([microsoft/TypeScript](https://github.com/microsoft/TypeScript), formerly
 [typescript-go](https://github.com/microsoft/typescript-go)). It keeps Go's algorithms and
 behavior and has the same command line (`tsc`), language server and API.
 
-## Install
+### Install
 
 ```sh
 npm install -D tsc-rs
@@ -67,7 +127,7 @@ release after 0.2.0) macOS x64, Windows x64 and Windows arm64.
 
 To use it in VS Code, see the [npm package README](npm/tsc-rs-readme.md#vs-code).
 
-## Effect diagnostics
+### Effect diagnostics
 
 `tsc-rs` has the [Effect](https://effect.website) language service diagnostics built in (codes
 377xxx), so an Effect project needs no second compiler. They come from the same check as the
@@ -82,7 +142,7 @@ The rules, options and `@effect-diagnostics` comments are a port of
 [Effect-TS/tsgo](https://github.com/Effect-TS/tsgo) 0.46.1. The editor features of the language
 service (quick fixes, refactors, hover, completions) are not ported.
 
-## Status
+### Status
 
 The port is pinned to one upstream revision, microsoft/TypeScript
 [`673a5f17d713`](https://github.com/microsoft/TypeScript/commit/673a5f17d713bdc8c7185f18a9c11e3c4ac5d781)
@@ -100,7 +160,7 @@ goes away when the port moves to a newer pin.
 - **Real projects.** On 120 open-source repos, the command-line output differs from Go's only in
   the problems below and where Go's own output changes from run to run.
 
-## Benchmark: T3 Code
+### Benchmark: T3 Code
 
 Full type check of [T3 Code](https://github.com/pingdotgg/t3code), compared with `tsc` 6, `tsc` 7
 and the new `bun check` in Bun. T3 Code uses Effect, so there are two cases: without the Effect
@@ -147,7 +207,7 @@ Effect-patched 7.0.2 from `@effect/tsgo` 0.46.1, and `tsc` 6 is 6.0.3 patched wi
 [scripts/bench-apps/t3code.sh](scripts/bench-apps/t3code.sh). The `tsc-rs` switch in T3 Code is
 [pingdotgg/t3code#16704](https://github.com/pingdotgg/t3code/pull/16704).
 
-## Benchmark: real-world apps
+### Benchmark: real-world apps
 
 Full type check of six open-source apps with `tsc` 6 (the JavaScript compiler), `tsc` 7 (the Go
 compiler), `tsc-rs` and `bun check`. The multiplier is the speedup over `tsc` 6. Lower times are
@@ -211,7 +271,7 @@ The scripts are in [scripts/bench-apps](scripts/bench-apps): `setup.sh <dir>`, t
 `run.sh <dir>` and `summary.py <dir>`, and `t3code.sh <dir>` for T3 Code. To time a new `tsc-rs`
 only, run `run.sh` and `t3code.sh` with `TOOLS=tsc-rs`.
 
-### Why `bun check` is faster
+#### Why `bun check` is faster
 
 The lead of `bun check` is all in the check step. Its checkers share one type store on all cores.
 `tsc` 7 runs 4 checkers, and each one makes its own copies of the types it needs: on T3 Code
@@ -228,7 +288,7 @@ repos, and `tsc-rs` on all 60. `bun check` also reports errors that `tsc` 7 does
 TS2749 on T3 Code `apps/server`. These numbers are from our studies of 2026-10-07 and 2026-10-08,
 with `tsc-rs` 0.1.0 and R179 on Linux.
 
-## Known problems
+### Known problems
 
 - In some monorepos, the source files of a workspace package are reachable both through
   `node_modules` and through a direct import. There, `tsc-rs` can write output for more of those
@@ -248,7 +308,7 @@ with `tsc-rs` 0.1.0 and R179 on Linux.
 - `tsc-rs --version` prints the TypeScript version that it ports (7.1.0-dev), not the npm
   version. The compiler matches `typesVersions` against it.
 
-## Development
+### Development
 
 `crates/ts_goport` is the compiler. It has two parts crates, `goport_util` and `goport_lsproto`,
 in `crates/ts_goport/parts`, and uses the lib files in `crates/ts_goport/libs`.
@@ -274,7 +334,7 @@ run with
   [saved state](docs/typechecker-state/current.json)
 - How the project started: [docs/history.md](docs/history.md)
 
-### Develop on Windows
+#### Develop on Windows
 
 CI builds and tests `x86_64-pc-windows-msvc` (the Windows job of
 [ci.yml](.github/workflows/ci.yml)).
@@ -295,7 +355,7 @@ CI builds and tests `x86_64-pc-windows-msvc` (the Windows job of
   Git Bash. The other tools in `scripts/` (the revision pipeline, the gate, `remote.sh`) are for
   the Linux hosts only.
 
-## Releases
+### Releases
 
 Push a tag `v<version>` (for example `v0.1.0`). The
 [release workflow](.github/workflows/release.yml) builds, packs and tests the packages, publishes
@@ -303,7 +363,7 @@ them to npm and creates a GitHub release. A stable version goes to the dist-tag 
 prerelease version (`v0.2.0-beta.1`) to `next` and a GitHub prerelease. See
 [npm/README.md](npm/README.md#tsc-rs-releases).
 
-## License
+### License
 
 [MIT](LICENSE). The port keeps the licenses and notices of the code it ports: TypeScript
 (Apache-2.0) and parts of the Go standard library (BSD-3-Clause). See [NOTICE.md](NOTICE.md).

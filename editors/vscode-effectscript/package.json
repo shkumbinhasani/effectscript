@@ -1,0 +1,61 @@
+{
+  "name": "effectscript",
+  "displayName": "EffectScript",
+  "description": "EffectScript (.ef) language support: highlighting, diagnostics, hover, completions and navigation",
+  "version": "0.0.1",
+  "publisher": "effectscript",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Programming Languages"],
+  "main": "./extension.js",
+  "activationEvents": ["onLanguage:effectscript"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "effectscript",
+        "aliases": ["EffectScript", "effectscript"],
+        "extensions": [".ef"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "effectscript",
+        "scopeName": "source.ef",
+        "path": "./syntaxes/effectscript.tmLanguage.json"
+      },
+      {
+        "scopeName": "source.ef.keywords",
+        "path": "./syntaxes/effectscript.keywords.tmLanguage.json",
+        "injectTo": ["source.ef"]
+      }
+    ],
+    "configuration": {
+      "title": "EffectScript",
+      "properties": {
+        "effectscript.compilerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the efc compiler. Empty: the extension looks for target/release/efc in the workspace folders and their parents."
+        },
+        "effectscript.serveTypeScript": {
+          "type": "boolean",
+          "default": false,
+          "description": "Also send .ts and .tsx files to efc, so TypeScript files that import .ef modules resolve. Turn off the built-in TypeScript extension for the workspace when you use this, or you get two sets of diagnostics."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "effectscript.restartServer",
+        "title": "EffectScript: Restart Language Server"
+      }
+    ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "9.0.1"
+  }
+}

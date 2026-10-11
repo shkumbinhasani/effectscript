@@ -1,0 +1,6 @@
+import { add, later } from "./same.js"
+import * as fromTs from "./same.js"
+
+export async function total(): Promise<number> {
+  return add(await later(1), fromTs.add(1, 2))
+}

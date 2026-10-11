@@ -94,6 +94,10 @@ impl<'a> Parser<'a> {
         if !self.try_parse_semicolon() {
             self.parse_error_for_missing_semicolon_after(expression);
         }
+        if let Some(lowered) = self.ef_lower_throw(pos, expression) {
+            self.with_js_doc(lowered, jsdoc);
+            return lowered;
+        }
         let node = self.factory.new_throw_statement(expression);
         let result = self.finish_node(node, pos);
         self.with_js_doc(result, jsdoc);
@@ -105,6 +109,9 @@ impl<'a> Parser<'a> {
     pub fn parse_try_statement(&mut self) -> Node {
         let pos = self.node_pos();
         let jsdoc = self.jsdoc_scanner_info();
+        if self.ef_try_statement() {
+            return self.parse_effect_try_statement(pos, jsdoc);
+        }
         self.parse_expected(SyntaxKind::TryKeyword);
         let try_block = self.parse_block(false /*ignoreMissingOpenBrace*/, None);
         let mut catch_clause = Node::NIL;
@@ -533,7 +540,9 @@ impl<'a> Parser<'a> {
         if self.parse_expected(SyntaxKind::OpenBraceToken) {
             // ClassTail[Yield,Await] : (Modified) See 14.5
             //      ClassHeritage[?Yield,?Await]opt { ClassBody[?Yield,?Await]opt }
+            let entered = self.ef_enter_barrier();
             members = self.parse_list(ParsingContext::ClassMembers, Parser::parse_class_element);
+            self.ef_exit_function_body(entered);
             self.parse_expected(SyntaxKind::CloseBraceToken);
         } else {
             members = self.create_missing_list();
@@ -820,10 +829,12 @@ impl<'a> Parser<'a> {
         let save_context_flags = self.context_flags;
         self.set_context_flags(NodeFlags::YIELD_CONTEXT, false);
         self.set_context_flags(NodeFlags::AWAIT_CONTEXT, true);
+        let entered = self.ef_enter_barrier();
         let body = self.parse_block(
             false, /*ignoreMissingOpenBrace*/
             None,  /*diagnosticMessage*/
         );
+        self.ef_exit_function_body(entered);
         self.context_flags = save_context_flags;
         body
     }

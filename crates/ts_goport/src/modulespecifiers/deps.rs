@@ -57,7 +57,7 @@ pub fn mangle_scoped_package_name(package_name: &str) -> String {
 pub fn try_get_js_extension_for_file(file_name: &str, options: &CompilerOptions) -> &'static str {
     let ext = tspath::try_get_extension_from_path(file_name);
     match ext {
-        tspath::EXTENSION_TS | tspath::EXTENSION_DTS => tspath::EXTENSION_JS,
+        tspath::EXTENSION_TS | tspath::EXTENSION_EF | tspath::EXTENSION_DTS => tspath::EXTENSION_JS,
         tspath::EXTENSION_TSX => {
             if options.jsx == JsxEmit::PRESERVE {
                 return tspath::EXTENSION_JSX;

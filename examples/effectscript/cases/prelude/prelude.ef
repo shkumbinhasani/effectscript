@@ -1,0 +1,28 @@
+export class Missing extends Data.TaggedError("Missing")<{ readonly key: string }> {}
+
+export class Config extends Context.Tag("Config")<Config, ReadonlyMap<string, string>>() {}
+
+export const ConfigLive = Layer.succeed(Config, new Map([["name", "effectscript"]]))
+
+export type Option = { readonly stream: string }
+
+export const option: Option = { stream: "no Stream import" }
+
+export effect async function read(key: string): string
+  requires Config
+  throws Missing
+{
+  const config = use Config
+  const value = config.get(key)
+  if (value === undefined) throw new Missing({ key })
+  return value
+}
+
+export function shadowed(Exit: number): number {
+  return Exit + 1
+}
+
+export const main = read("name").pipe(
+  Effect.catchTag("Missing", (e) => Effect.succeed(`missing ${e.key}`)),
+  Effect.provide(ConfigLive)
+)

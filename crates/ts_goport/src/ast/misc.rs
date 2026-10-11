@@ -880,7 +880,12 @@ impl DiagnosticsCollection {
     /// `file_names`).
     pub fn get_diagnostics_for_file_name(&mut self, name: &'static str) -> Vec<Diagnostic> {
         let ids = self.get_diagnostics_for_file_locked(name);
-        ids.iter().map(|&id| self.diagnostics[id].clone()).collect()
+        let effectscript = crate::effectscript::is_effectscript_file_name(name);
+        ids.iter()
+            .map(|&id| &self.diagnostics[id])
+            .filter(|diagnostic| !effectscript || diagnostic.pos() >= 0)
+            .cloned()
+            .collect()
     }
 
     /// The names of the files that have diagnostics (Go `fileDiagnostics`

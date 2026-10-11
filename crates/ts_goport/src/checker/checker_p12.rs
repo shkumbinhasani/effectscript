@@ -1204,6 +1204,12 @@ impl Checker {
         } else {
             yield_expression_type = self.undefined_widening_type;
         }
+        let effect_kind = crate::checker::effectscript::effect_yield_kind(node);
+        if let Some(kind) = effect_kind
+            && !self.check_effect_yield_operand(node, kind, yield_expression_type)
+        {
+            return self.error_type;
+        }
         let fn_ = get_containing_function(node);
         if fn_.is_nil() {
             return self.any_type;
@@ -1259,7 +1265,17 @@ impl Checker {
             signature_next_type,
             is_async,
         );
-        if return_type.is_some() && yielded_type.is_some() {
+        if return_type.is_some()
+            && yielded_type.is_some()
+            && !effect_kind.is_some_and(|kind| {
+                self.check_effect_yield_contract(
+                    node,
+                    kind,
+                    yield_expression_type,
+                    signature_yield_type,
+                )
+            })
+        {
             let error_node = if node.expression().is_some() {
                 node.expression()
             } else {

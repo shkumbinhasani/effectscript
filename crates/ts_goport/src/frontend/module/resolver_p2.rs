@@ -598,11 +598,16 @@ impl ResolutionState<'_> {
                 }
                 continue_searching()
             }
-            EXTENSION_TS | EXTENSION_DTS | EXTENSION_JS | "" => {
-                let from_ts =
-                    original_extension == EXTENSION_TS || original_extension == EXTENSION_DTS;
+            EXTENSION_TS | EXTENSION_EF | EXTENSION_DTS | EXTENSION_JS | "" => {
+                let from_ts = original_extension == EXTENSION_TS
+                    || original_extension == EXTENSION_EF
+                    || original_extension == EXTENSION_DTS;
                 if extensions.intersects(Extensions::TYPE_SCRIPT) {
                     let resolved = self.try_extension(EXTENSION_TS, extensionless, from_ts);
+                    if resolved.is_some() {
+                        return resolved;
+                    }
+                    let resolved = self.try_extension(EXTENSION_EF, extensionless, from_ts);
                     if resolved.is_some() {
                         return resolved;
                     }
@@ -1531,6 +1536,7 @@ pub fn extension_is_ok(extensions: Extensions, extension: &str) -> bool {
             || extension == EXTENSION_CJS)
         || (extensions.intersects(Extensions::TYPE_SCRIPT)
             && (extension == EXTENSION_TS
+                || extension == EXTENSION_EF
                 || extension == EXTENSION_TSX
                 || extension == EXTENSION_MTS
                 || extension == EXTENSION_CTS))

@@ -1,0 +1,67 @@
+export class NotFound extends Data.TaggedError("NotFound")<{ readonly id: string }> {}
+export class DbError extends Data.TaggedError("DbError")<{ readonly reason: string }> {}
+
+export const log: Array<string> = []
+
+export effect async function find(id: string): string
+  throws NotFound | DbError
+{
+  if (id === "db") throw new DbError({ reason: "down" })
+  if (id !== "1") throw new NotFound({ id })
+  return "Ada"
+}
+
+export effect async function findOrGuest(id: string): string
+  throws DbError
+{
+  try {
+    return await find(id)
+  } catch (e) {
+    if (e._tag === "NotFound") return `guest ${e.id}`
+    throw e
+  } finally {
+    log.push(`done ${id}`)
+  }
+}
+
+export effect async function firstFound(ids: ReadonlyArray<string>): string {
+  for (const id of ids) {
+    try {
+      const name = await find(id)
+      if (name.length > 0) return name
+    } catch {
+      continue
+    }
+  }
+  return "nobody"
+}
+
+export effect async function nested(id: string): number {
+  try {
+    try {
+      await find(id)
+      return 1
+    } catch (inner) {
+      if (inner._tag === "DbError") throw inner
+      return 2
+    }
+  } catch (outer) {
+    return outer.reason.length
+  }
+}
+
+export effect async function inferred(id: string) {
+  try {
+    return { name: await find(id) }
+  } catch (e) {
+    return { name: e._tag }
+  }
+}
+
+export effect async function cleanup(): void {
+  try {
+    await Effect.never
+  } finally {
+    log.push("interrupted cleanup")
+  }
+}

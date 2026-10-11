@@ -119,6 +119,7 @@ fn get_token_at_position_unexported(
     // `nodeAfterLeft` tracks the first node we visit after visiting the node that advances `left`.
     // When scanning in between nodes for token, we should only scan up to the start of `nodeAfterLeft`.
     let node_after_left: Cell<Node> = Cell::new(Node::NIL);
+    let effectscript_file = crate::effectscript::is_effectscript_source_file(source_file);
 
     let get_included_preceding_token = |subtree: Node| -> Node {
         let child =
@@ -170,7 +171,10 @@ fn get_token_at_position_unexported(
     let visit_node = |node: Node, _v: &mut NodeVisitor<'_, ()>| -> Node {
         // We can't abort visiting children, so once a match is found, we set `next`
         // and do nothing on subsequent visits.
-        if node.is_nil() || node.flags().intersects(NodeFlags::REPARSED) {
+        if node.is_nil()
+            || node.flags().intersects(NodeFlags::REPARSED)
+            || effectscript_file && node.pos() < 0
+        {
             return Node::NIL;
         }
         if node_after_left.get().is_nil() {
@@ -210,7 +214,30 @@ fn get_token_at_position_unexported(
                 }
             }
         }
-        if next.get().is_nil() {
+        if next.get().is_nil() && effectscript_file {
+            for node in node_list.nodes() {
+                if node.flags().intersects(NodeFlags::REPARSED) || node.pos() < 0 {
+                    continue;
+                }
+                match test_node(node) {
+                    -1 => {
+                        left.set(left.get().max(node.end()));
+                        node_after_left.set(Node::NIL);
+                    }
+                    0 => {
+                        next.set(node);
+                        break;
+                    }
+                    _ => {
+                        if node_after_left.get().is_nil()
+                            || node.pos() < node_after_left.get().pos()
+                        {
+                            node_after_left.set(node);
+                        }
+                    }
+                }
+            }
+        } else if next.get().is_nil() {
             if node_list.end() == position && include_preceding_token_at_end_position.is_some() {
                 left.set(node_list.end());
                 node_after_left.set(Node::NIL);
@@ -347,7 +374,7 @@ fn get_token_at_position_unexported(
                 }
                 if token_start <= position && (position < token_end) {
                     if token == SyntaxKind::Identifier || !is_token_kind(token) {
-                        if is_js_doc_kind(current.kind()) {
+                        if is_js_doc_kind(current.kind()) || effectscript_file {
                             return current;
                         }
                         // PORT: Go `Kind.String()` prints "KindX"; this prints the

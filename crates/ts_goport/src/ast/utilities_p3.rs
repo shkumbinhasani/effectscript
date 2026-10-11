@@ -1095,7 +1095,7 @@ pub fn get_implied_node_format_for_file(path: &str, package_json_type: &str) -> 
         implied_node_format = ModuleKind::ES_NEXT;
     } else if file_extension_is_one_of_p3(path, &[".d.cts", ".cts", ".cjs"]) {
         implied_node_format = ModuleKind::COMMON_JS;
-    } else if file_extension_is_one_of_p3(path, &[".d.ts", ".ts", ".tsx", ".js", ".jsx"]) {
+    } else if file_extension_is_one_of_p3(path, &[".d.ts", ".ts", ".ef", ".tsx", ".js", ".jsx"]) {
         implied_node_format = if package_json_type == "module" {
             ModuleKind::ES_NEXT
         } else {

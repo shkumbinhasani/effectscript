@@ -4,6 +4,7 @@ use crate::frontend::prelude::*;
 
 // Go: tspath/extension.go:8 Extension constants
 pub const EXTENSION_TS: &str = ".ts";
+pub const EXTENSION_EF: &str = ".ef";
 pub const EXTENSION_TSX: &str = ".tsx";
 pub const EXTENSION_DTS: &str = ".d.ts";
 pub const EXTENSION_JS: &str = ".js";
@@ -22,13 +23,19 @@ pub const EXTENSION_DCTS: &str = ".d.cts";
 // same order.
 pub const SUPPORTED_DECLARATION_EXTENSIONS: &[&str] =
     &[EXTENSION_DTS, EXTENSION_DCTS, EXTENSION_DMTS];
-pub const SUPPORTED_TS_IMPLEMENTATION_EXTENSIONS: &[&str] =
-    &[EXTENSION_TS, EXTENSION_TSX, EXTENSION_MTS, EXTENSION_CTS];
+pub const SUPPORTED_TS_IMPLEMENTATION_EXTENSIONS: &[&str] = &[
+    EXTENSION_TS,
+    EXTENSION_EF,
+    EXTENSION_TSX,
+    EXTENSION_MTS,
+    EXTENSION_CTS,
+];
 const SUPPORTED_TS_EXTENSIONS_FOR_EXTRACT_EXTENSION: &[&str] = &[
     EXTENSION_DTS,
     EXTENSION_DCTS,
     EXTENSION_DMTS,
     EXTENSION_TS,
+    EXTENSION_EF,
     EXTENSION_TSX,
     EXTENSION_MTS,
     EXTENSION_CTS,
@@ -36,6 +43,7 @@ const SUPPORTED_TS_EXTENSIONS_FOR_EXTRACT_EXTENSION: &[&str] = &[
 pub const ALL_SUPPORTED_EXTENSIONS: &[&[&str]] = &[
     &[
         EXTENSION_TS,
+        EXTENSION_EF,
         EXTENSION_TSX,
         EXTENSION_DTS,
         EXTENSION_JS,
@@ -45,12 +53,13 @@ pub const ALL_SUPPORTED_EXTENSIONS: &[&[&str]] = &[
     &[EXTENSION_MTS, EXTENSION_DMTS, EXTENSION_MJS],
 ];
 pub const SUPPORTED_TS_EXTENSIONS: &[&[&str]] = &[
-    &[EXTENSION_TS, EXTENSION_TSX, EXTENSION_DTS],
+    &[EXTENSION_TS, EXTENSION_EF, EXTENSION_TSX, EXTENSION_DTS],
     &[EXTENSION_CTS, EXTENSION_DCTS],
     &[EXTENSION_MTS, EXTENSION_DMTS],
 ];
 pub const SUPPORTED_TS_EXTENSIONS_FLAT: &[&str] = &[
     EXTENSION_TS,
+    EXTENSION_EF,
     EXTENSION_TSX,
     EXTENSION_DTS,
     EXTENSION_CTS,
@@ -68,6 +77,7 @@ pub const SUPPORTED_JS_EXTENSIONS_FLAT: &[&str] =
 pub const ALL_SUPPORTED_EXTENSIONS_WITH_JSON: &[&[&str]] = &[
     &[
         EXTENSION_TS,
+        EXTENSION_EF,
         EXTENSION_TSX,
         EXTENSION_DTS,
         EXTENSION_JS,
@@ -78,13 +88,14 @@ pub const ALL_SUPPORTED_EXTENSIONS_WITH_JSON: &[&[&str]] = &[
     &[EXTENSION_JSON],
 ];
 pub const SUPPORTED_TS_EXTENSIONS_WITH_JSON: &[&[&str]] = &[
-    &[EXTENSION_TS, EXTENSION_TSX, EXTENSION_DTS],
+    &[EXTENSION_TS, EXTENSION_EF, EXTENSION_TSX, EXTENSION_DTS],
     &[EXTENSION_CTS, EXTENSION_DCTS],
     &[EXTENSION_MTS, EXTENSION_DMTS],
     &[EXTENSION_JSON],
 ];
 pub const SUPPORTED_TS_EXTENSIONS_WITH_JSON_FLAT: &[&str] = &[
     EXTENSION_TS,
+    EXTENSION_EF,
     EXTENSION_TSX,
     EXTENSION_DTS,
     EXTENSION_CTS,
@@ -106,6 +117,7 @@ pub const EXTENSIONS_NOT_SUPPORTING_EXTENSIONLESS_RESOLUTION: &[&str] = &[
 pub fn extension_is_ts(ext: &str) -> bool {
     let b = ext.as_bytes();
     ext == EXTENSION_TS
+        || ext == EXTENSION_EF
         || ext == EXTENSION_TSX
         || ext == EXTENSION_DTS
         || ext == EXTENSION_MTS
@@ -125,6 +137,7 @@ const EXTENSIONS_TO_REMOVE: &[&str] = &[
     EXTENSION_CJS,
     EXTENSION_CTS,
     EXTENSION_TS,
+    EXTENSION_EF,
     EXTENSION_JS,
     EXTENSION_TSX,
     EXTENSION_JSX,
@@ -247,7 +260,13 @@ pub fn get_declaration_emit_extension_for_path(path: &str) -> String {
         EXTENSION_DCTS.to_string()
     } else if file_extension_is_one_of(
         path,
-        &[EXTENSION_TS, EXTENSION_TSX, EXTENSION_JS, EXTENSION_JSX],
+        &[
+            EXTENSION_TS,
+            EXTENSION_EF,
+            EXTENSION_TSX,
+            EXTENSION_JS,
+            EXTENSION_JSX,
+        ],
     ) {
         EXTENSION_DTS.to_string()
     } else {
@@ -331,6 +350,7 @@ pub fn get_possible_original_input_extension_for_extension(path: &str) -> Vec<St
     vec![
         EXTENSION_TSX.to_string(),
         EXTENSION_TS.to_string(),
+        EXTENSION_EF.to_string(),
         EXTENSION_JSX.to_string(),
         EXTENSION_JS.to_string(),
     ]

@@ -1,0 +1,21 @@
+import { Context, Data, Effect } from "effect"
+
+export class Missing extends Data.TaggedError("Missing")<{ readonly key: string }> {}
+
+export class Config extends Context.Tag("Config")<Config, ReadonlyMap<string, string>>() {}
+
+export effect async function read(key: string): string
+  requires Config
+  throws Missing
+{
+  const config = use Config
+  const value = config.get(key)
+  if (value === undefined) throw new Missing({ key })
+  return value
+}
+
+const Effect$ = Effect
+export const main = read("name").pipe(
+  Effect$.catchTag("Missing", (e) => Effect$.succeed(`missing ${e.key}`)),
+  Effect$.provideService(Config, new Map([["name", "effectscript"]]))
+)

@@ -1812,6 +1812,7 @@ fn maps_clone_p17(symbols: &mut SymbolArena, table: SymbolTable) -> SymbolTable 
 pub(crate) mod tspath_p17 {
     // Go: tspath/extension.go constants
     pub const EXTENSION_TS: &str = ".ts";
+    pub const EXTENSION_EF: &str = ".ef";
     pub const EXTENSION_TSX: &str = ".tsx";
     pub const EXTENSION_DTS: &str = ".d.ts";
     pub const EXTENSION_JS: &str = ".js";
@@ -1835,8 +1836,9 @@ pub(crate) mod tspath_p17 {
         EXTENSION_MTS,
         EXTENSION_CTS,
     ];
-    pub const SUPPORTED_TS_EXTENSIONS_FLAT: [&str; 7] = [
+    pub const SUPPORTED_TS_EXTENSIONS_FLAT: [&str; 8] = [
         EXTENSION_TS,
+        EXTENSION_EF,
         EXTENSION_TSX,
         EXTENSION_DTS,
         EXTENSION_CTS,
@@ -1844,7 +1846,7 @@ pub(crate) mod tspath_p17 {
         EXTENSION_MTS,
         EXTENSION_DMTS,
     ];
-    const EXTENSIONS_TO_REMOVE: [&str; 12] = [
+    const EXTENSIONS_TO_REMOVE: [&str; 13] = [
         EXTENSION_DTS,
         EXTENSION_DMTS,
         EXTENSION_DCTS,
@@ -1853,6 +1855,7 @@ pub(crate) mod tspath_p17 {
         EXTENSION_CJS,
         EXTENSION_CTS,
         EXTENSION_TS,
+        EXTENSION_EF,
         EXTENSION_JS,
         EXTENSION_TSX,
         EXTENSION_JSX,
@@ -2657,6 +2660,7 @@ pub(crate) mod tspath_p17 {
     // Go: tspath/extension.go:39 ExtensionIsTs
     pub fn extension_is_ts(ext: &str) -> bool {
         ext == EXTENSION_TS
+            || ext == EXTENSION_EF
             || ext == EXTENSION_TSX
             || ext == EXTENSION_DTS
             || ext == EXTENSION_MTS
@@ -2916,6 +2920,7 @@ mod module_p17 {
 
         let ext = resolved_module.extension.as_str();
         if ext == EXTENSION_TS
+            || ext == EXTENSION_EF
             || ext == EXTENSION_DTS
             || ext == EXTENSION_MTS
             || ext == EXTENSION_DMTS

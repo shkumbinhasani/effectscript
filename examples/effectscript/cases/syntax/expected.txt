@@ -1,0 +1,9 @@
+bad.ef(14,5): error TS378014: A 'return' statement cannot be used in a 'finally' block of an effect function.
+bad.ef(21,7): error TS378011: 'break' cannot jump out of a 'try', 'catch' or 'finally' block in an effect function yet.
+bad.ef(28,10): error TS378007: 'this' is not supported in effect functions yet.
+bad.ef(31,1): error TS378008: An 'effect' function must be declared 'async'.
+bad.ef(36,3): error TS378009: An effect function with a 'requires' or 'throws' clause must declare its success type.
+bad.ef(42,13): error TS378006: A 'use' expression is only allowed in the body of an effect function.
+bad.ef(46,22): error TS378010: An effect function cannot be a generator.
+bad.ef(51,10): error TS378007: 'arguments' is not supported in effect functions yet.
+bad.ef(55,7): error TS378007: 'for await' is not supported in effect functions yet.

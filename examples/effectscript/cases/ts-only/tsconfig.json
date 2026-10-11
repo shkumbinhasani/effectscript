@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "target": "es2022", "module": "nodenext", "strict": true, "noEmit": true, "types": [] },
+  "files": ["not-effectscript.ts"]
+}

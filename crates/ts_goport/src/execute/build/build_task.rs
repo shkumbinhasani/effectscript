@@ -318,7 +318,13 @@ impl StatusPrefetch {
 fn is_typescript_source(file_name: &str) -> bool {
     file_extension_is_one_of(
         file_name,
-        &[EXTENSION_TS, EXTENSION_TSX, EXTENSION_MTS, EXTENSION_CTS],
+        &[
+            EXTENSION_TS,
+            EXTENSION_EF,
+            EXTENSION_TSX,
+            EXTENSION_MTS,
+            EXTENSION_CTS,
+        ],
     ) && !is_declaration_file_name(file_name)
 }
 

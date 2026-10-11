@@ -1006,10 +1006,12 @@ impl<'a> Parser<'a> {
         // We may be in a [Decorator] context when parsing a function expression or
         // arrow function. The body of the function is not in [Decorator] context.
         self.set_context_flags(NodeFlags::DECORATOR_CONTEXT, false);
+        let entered = self.ef_enter_function_body();
         let block = self.parse_block(
             flags.intersects(ParseFlags::IGNORE_MISSING_OPEN_BRACE),
             diagnostic_message,
         );
+        self.ef_exit_function_body(entered);
         self.context_flags = save_context_flags;
         self.statement_has_await_identifier = save_has_await_identifier;
         block

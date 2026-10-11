@@ -54,6 +54,11 @@ pub fn get_last_token(node: Node, source_file: Node) -> Node {
         return Node::NIL;
     }
 
+    if position_is_synthesized(node.pos())
+        && crate::effectscript::is_effectscript_source_file(source_file)
+    {
+        return Node::NIL;
+    }
     assert_has_real_position(node);
 
     let last_child = get_last_child(node, source_file);
@@ -105,6 +110,11 @@ pub fn get_last_visited_child(node: Node, source_file: Node) -> Node {
 // Go: ls/lsutil/children.go:87 GetFirstToken
 pub fn get_first_token(node: Node, source_file: Node) -> Node {
     if is_identifier(node) || is_token_kind(node.kind()) {
+        return Node::NIL;
+    }
+    if position_is_synthesized(node.pos())
+        && crate::effectscript::is_effectscript_source_file(source_file)
+    {
         return Node::NIL;
     }
     assert_has_real_position(node);

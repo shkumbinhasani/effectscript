@@ -1,0 +1,19 @@
+{
+  "scopeName": "source.ef.keywords",
+  "injectionSelector": "L:source.ef -comment -string -meta.type.declaration -meta.type.parameters -meta.return.type -meta.clause.effect.ef",
+  "patterns": [
+    {
+      "match": "(?<![_$[:alnum:].])(use)\\s+([A-Z][_$[:alnum:]]*)(?![_$[:alnum:]])",
+      "captures": {
+        "1": { "name": "keyword.control.flow.use.ef" },
+        "2": { "name": "entity.name.type.class.ef" }
+      }
+    },
+    {
+      "match": "(?<![_$[:alnum:].])(use)\\s+(?=[_$[:alpha:]])",
+      "captures": {
+        "1": { "name": "keyword.control.flow.use.ef" }
+      }
+    }
+  ]
+}

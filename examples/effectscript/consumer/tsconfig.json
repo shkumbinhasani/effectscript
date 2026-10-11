@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "outDir": "../consumer-dist",
+    "skipLibCheck": false,
+    "types": ["node"]
+  },
+  "include": ["index.ts"]
+}

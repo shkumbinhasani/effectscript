@@ -1,0 +1,58 @@
+{
+  "name": "EffectScript",
+  "scopeName": "source.ef",
+  "fileTypes": ["ef"],
+  "patterns": [
+    { "include": "#effect-function" },
+    { "include": "source.ts" }
+  ],
+  "repository": {
+    "effect-function": {
+      "name": "meta.function.effect.ef",
+      "begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(?:(\\bexport)\\s+)?(?:(\\bdefault)\\s+)?(?:(\\bdeclare)\\s+)?\\b(effect)\\s+(?:(async)\\s+)?(function\\b)(?:\\s*(\\*))?(?:\\s+|(?=[(<]))([_$[:alpha:]][_$[:alnum:]]*)?",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.export.ts" },
+        "2": { "name": "keyword.control.default.ts" },
+        "3": { "name": "storage.modifier.ts" },
+        "4": { "name": "storage.modifier.effect.ef" },
+        "5": { "name": "storage.modifier.async.ts" },
+        "6": { "name": "storage.type.function.ts" },
+        "7": { "name": "keyword.generator.asterisk.ts" },
+        "8": { "name": "meta.definition.function.ts entity.name.function.ts" }
+      },
+      "end": "(?<=\\})|(?=;)",
+      "patterns": [
+        { "include": "source.ts#comment" },
+        { "include": "source.ts#type-parameters" },
+        { "include": "source.ts#function-parameters" },
+        { "include": "#success-type" },
+        { "include": "#effect-clause" },
+        { "include": "source.ts#decl-block" }
+      ]
+    },
+    "success-type": {
+      "name": "meta.return.type.ts",
+      "begin": "(?<=\\))\\s*(:)",
+      "beginCaptures": {
+        "1": { "name": "keyword.operator.type.annotation.ts" }
+      },
+      "end": "(?=\\{|;|(?<![_$[:alnum:]])(?:requires|throws)(?![_$[:alnum:]]))",
+      "patterns": [
+        { "include": "source.ts#comment" },
+        { "include": "source.ts#type" }
+      ]
+    },
+    "effect-clause": {
+      "name": "meta.clause.effect.ef",
+      "begin": "(?<![_$[:alnum:]])(requires|throws)(?![_$[:alnum:]])",
+      "beginCaptures": {
+        "1": { "name": "storage.modifier.$1.ef" }
+      },
+      "end": "(?=\\{|;|(?<![_$[:alnum:]])(?:requires|throws)(?![_$[:alnum:]]))",
+      "patterns": [
+        { "include": "source.ts#comment" },
+        { "include": "source.ts#type" }
+      ]
+    }
+  }
+}
